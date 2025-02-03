@@ -245,14 +245,15 @@ class _ReportingScreenState extends State<ReportingScreen> {
     return 'SELECT $selectFields FROM Patients_Visits pv INNER JOIN Patients_Info pi ON pv.Patient_Id = pi.Patient_Id';
   }
 
-  String buildBaseSelectStatement2(List<FieldInfo> fields) {
+  String buildBaseSelectStatement2(List<FieldInfo> fields,
+      Map<int, Map> fieldsMap, List<int> selectedFields) {
     // Create a map from the list for easier access by field id
     Map<int, FieldInfo> fieldsMap = {
       for (var field in fields) field.id: field,
     };
 
     // Remove fields that are not selected
-    fieldsMap.removeWhere((key, value) => !selectedFields.contains(key));
+    // fieldsMap.removeWhere((key, value) => !selectedFields.contains(key));
 
     // Create a list of the updated fields (now only the selected ones)
     List<FieldInfo> updatedFields = fieldsMap.entries
@@ -298,288 +299,290 @@ class _ReportingScreenState extends State<ReportingScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: BlocListener<GetSearchFields, GetSearchFieldsState>(
-          listener: (context, state) {
-            if (state is GetSearchFieldsSuccess) {
-              sqlStr = buildBaseSelectStatement(state.searchFields);
-              fieldsMap = {
-                for (var proc in state.searchFields)
-                  proc.id: {"desc": proc.fieldDesc, "visible": proc.isVisible},
-              };
-              selectedFields = fieldsMap.entries
-                  .where((entry) => entry.value["visible"] == true)
-                  .map((entry) => entry.key)
-                  .toList();
-              fields = state.searchFields;
-            }
-          },
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BlocConsumer<GetSearchFields, GetSearchFieldsState>(
-                  listener: (context, state) {},
-                  builder: (context, state) {
-                    if (state is GetSearchFieldsSuccess) {
-                      return MultiSelectChip(
-                        title: "Fields",
-                        options: fieldsMap,
-                        selectedItems: selectedFields,
-                        onSelectionChanged: (selected) {
-                          setState(() {
-                            selectedFields = selected;
-                          });
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BlocConsumer<GetSearchFields, GetSearchFieldsState>(
+                listener: (context, state) {
+                  if (state is GetSearchFieldsSuccess) {
+                    // sqlStr = buildBaseSelectStatement2(
+                    //     state.searchFields, fieldsMap, selectedFields);
+                    fieldsMap = {
+                      for (var proc in state.searchFields)
+                        proc.id: {
+                          "desc": proc.fieldDesc,
+                          "visible": proc.isVisible
                         },
-                      );
-                    } else {
-                      return const CircularProgressIndicator();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime(2100),
-                    );
-                    if (pickedDate != null) {
-                      setState(() {
-                        birthDateController.text =
-                            pickedDate.toIso8601String().split('T').first;
-                      });
-                    }
-                  },
-                  child: IgnorePointer(
-                    child: TextFormField(
-                      controller: birthDateController,
-                      decoration: const InputDecoration(
-                        labelText: "Birth Date",
-                        hintText: "YYYY-MM-DD",
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () async {
-                          DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime(2100),
-                          );
-                          if (pickedDate != null) {
-                            setState(() {
-                              visitDateFromController.text =
-                                  pickedDate.toIso8601String().split('T').first;
-
-                              // Validate date range
-                              if (visitDateToController.text.isNotEmpty) {
-                                DateTime visitDateTo =
-                                    DateTime.parse(visitDateToController.text);
-                                if (pickedDate.isAfter(visitDateTo)) {
-                                  visitDateFromController.clear();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          "Visit Date From cannot be after Visit Date To."),
-                                    ),
-                                  );
-                                }
-                              }
-                            });
-                          }
-                        },
-                        child: IgnorePointer(
-                          child: TextFormField(
-                            controller: visitDateFromController,
-                            decoration: const InputDecoration(
-                              labelText: "Visit Date From",
-                              hintText: "YYYY-MM-DD",
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () async {
-                          DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime(2100),
-                          );
-                          if (pickedDate != null) {
-                            setState(() {
-                              visitDateToController.text =
-                                  pickedDate.toIso8601String().split('T').first;
-
-                              // Validate date range
-                              if (visitDateFromController.text.isNotEmpty) {
-                                DateTime visitDateFrom = DateTime.parse(
-                                    visitDateFromController.text);
-                                if (visitDateFrom.isAfter(pickedDate)) {
-                                  visitDateToController.clear();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          "Visit Date To cannot be before Visit Date From."),
-                                    ),
-                                  );
-                                }
-                              }
-                            });
-                          }
-                        },
-                        child: IgnorePointer(
-                          child: TextFormField(
-                            controller: visitDateToController,
-                            decoration: const InputDecoration(
-                              labelText: "Visit Date To",
-                              hintText: "YYYY-MM-DD",
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                BlocConsumer<GetProcCubit, GetProcState>(
-                  listener: (context, state) {
-                    if (state is GetProcSuccess) {
-                      proceduresMap = {
-                        for (var proc in state.proc)
-                          proc.procedureId: proc.procedureDesc,
-                      };
-                      // procedures =
-                      //     state.proc.map((proc) => proc.procedureDesc).toList();
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state is GetProcSuccess) {
-                      return MultiSelectChip(
-                        title: "Procedures",
-                        options: proceduresMap,
-                        selectedItems: selectedProcedures,
-                        onSelectionChanged: (selected) {
-                          setState(() {
-                            selectedProcedures = selected;
-                          });
-                        },
-                      );
-                    } else if (state is GetProcFailed) {
-                      return const Text("Failed to load procedures");
-                    } else {
-                      return const CircularProgressIndicator();
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                MultiSelectChip(
-                  title: "Procedure Statuses",
-                  options: procedureStatuses,
-                  selectedItems: selectedProcedureStatuses,
-                  onSelectionChanged: (selected) {
-                    setState(() {
-                      selectedProcedureStatuses = selected;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    labelText: "Notes",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    CustomElevatedButton(
-                      onPressed: () {
-                        // Validate visit date range
-                        if (visitDateFromController.text.isNotEmpty &&
-                            visitDateToController.text.isNotEmpty) {
-                          DateTime visitDateFrom =
-                              DateTime.parse(visitDateFromController.text);
-                          DateTime visitDateTo =
-                              DateTime.parse(visitDateToController.text);
-
-                          if (visitDateFrom.isAfter(visitDateTo)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    "Visit Date From cannot be after Visit Date To."),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-
-                        // Logic to generate the report based on criteria
-                        final criteria = {
-                          "Birth Date": birthDateController.text,
-                          "Visit Date From": visitDateFromController.text,
-                          "Visit Date To": visitDateToController.text,
-                          "Procedures": selectedProcedures,
-                          "Procedure Statuses": selectedProcedureStatuses,
-                          "Notes": notesController.text,
-                        };
-
-                        sqlStr = buildBaseSelectStatement2(fields);
-                        String fullSqlStr = buildDynamicSqlQuery1(
-                            criteria, sqlStr, fieldGroupList);
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BlocProvider(
-                              create: (context) =>
-                                  GetGeneratedReportResultCubit(
-                                DataRepoImpl(
-                                  ApiService(
-                                    Dio(),
-                                  ),
-                                ),
-                              )..fetchPatientsWithSoapRequest(fullSqlStr),
-                              child: const ReportResultScreen(),
-                            ),
-                          ),
-                        );
-                      },
-                      text: "Generate Report",
-                    ),
-                    CustomElevatedButton(
-                      onPressed: () {
+                    };
+                    selectedFields = fieldsMap.entries
+                        .where((entry) => entry.value["visible"] == true)
+                        .map((entry) => entry.key)
+                        .toList();
+                    fields = state.searchFields;
+                  }
+                },
+                builder: (context, state) {
+                  if (state is GetSearchFieldsSuccess) {
+                    return MultiSelectChip(
+                      title: "Fields",
+                      options: fieldsMap,
+                      selectedItems: selectedFields,
+                      onSelectionChanged: (selected) {
                         setState(() {
-                          birthDateController.clear();
-                          visitDateFromController.clear();
-                          visitDateToController.clear();
-                          selectedProcedures.clear();
-                          selectedProcedureStatuses.clear();
-                          notesController.clear();
+                          selectedFields = selected;
                         });
                       },
-                      text: "Clear",
+                    );
+                  } else {
+                    return const CircularProgressIndicator();
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime(2100),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      birthDateController.text =
+                          pickedDate.toIso8601String().split('T').first;
+                    });
+                  }
+                },
+                child: IgnorePointer(
+                  child: TextFormField(
+                    controller: birthDateController,
+                    decoration: const InputDecoration(
+                      labelText: "Birth Date",
+                      hintText: "YYYY-MM-DD",
+                      border: OutlineInputBorder(),
                     ),
-                  ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime(2100),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
+                            visitDateFromController.text =
+                                pickedDate.toIso8601String().split('T').first;
+        
+                            // Validate date range
+                            if (visitDateToController.text.isNotEmpty) {
+                              DateTime visitDateTo =
+                                  DateTime.parse(visitDateToController.text);
+                              if (pickedDate.isAfter(visitDateTo)) {
+                                visitDateFromController.clear();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        "Visit Date From cannot be after Visit Date To."),
+                                  ),
+                                );
+                              }
+                            }
+                          });
+                        }
+                      },
+                      child: IgnorePointer(
+                        child: TextFormField(
+                          controller: visitDateFromController,
+                          decoration: const InputDecoration(
+                            labelText: "Visit Date From",
+                            hintText: "YYYY-MM-DD",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime(2100),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
+                            visitDateToController.text =
+                                pickedDate.toIso8601String().split('T').first;
+        
+                            // Validate date range
+                            if (visitDateFromController.text.isNotEmpty) {
+                              DateTime visitDateFrom = DateTime.parse(
+                                  visitDateFromController.text);
+                              if (visitDateFrom.isAfter(pickedDate)) {
+                                visitDateToController.clear();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        "Visit Date To cannot be before Visit Date From."),
+                                  ),
+                                );
+                              }
+                            }
+                          });
+                        }
+                      },
+                      child: IgnorePointer(
+                        child: TextFormField(
+                          controller: visitDateToController,
+                          decoration: const InputDecoration(
+                            labelText: "Visit Date To",
+                            hintText: "YYYY-MM-DD",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              BlocConsumer<GetProcCubit, GetProcState>(
+                listener: (context, state) {
+                  if (state is GetProcSuccess) {
+                    proceduresMap = {
+                      for (var proc in state.proc)
+                        proc.procedureId: proc.procedureDesc,
+                    };
+                    // procedures =
+                    //     state.proc.map((proc) => proc.procedureDesc).toList();
+                  }
+                },
+                builder: (context, state) {
+                  if (state is GetProcSuccess) {
+                    return MultiSelectChip(
+                      title: "Procedures",
+                      options: proceduresMap,
+                      selectedItems: selectedProcedures,
+                      onSelectionChanged: (selected) {
+                        setState(() {
+                          selectedProcedures = selected;
+                        });
+                      },
+                    );
+                  } else if (state is GetProcFailed) {
+                    return const Text("Failed to load procedures");
+                  } else {
+                    return const CircularProgressIndicator();
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              MultiSelectChip(
+                title: "Procedure Statuses",
+                options: procedureStatuses,
+                selectedItems: selectedProcedureStatuses,
+                onSelectionChanged: (selected) {
+                  setState(() {
+                    selectedProcedureStatuses = selected;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: notesController,
+                decoration: const InputDecoration(
+                  labelText: "Notes",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  CustomElevatedButton(
+                    onPressed: () {
+                      // Validate visit date range
+                      if (visitDateFromController.text.isNotEmpty &&
+                          visitDateToController.text.isNotEmpty) {
+                        DateTime visitDateFrom =
+                            DateTime.parse(visitDateFromController.text);
+                        DateTime visitDateTo =
+                            DateTime.parse(visitDateToController.text);
+        
+                        if (visitDateFrom.isAfter(visitDateTo)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  "Visit Date From cannot be after Visit Date To."),
+                            ),
+                          );
+                          return;
+                        }
+                      }
+        
+                      // Logic to generate the report based on criteria
+                      final criteria = {
+                        "Birth Date": birthDateController.text,
+                        "Visit Date From": visitDateFromController.text,
+                        "Visit Date To": visitDateToController.text,
+                        "Procedures": selectedProcedures,
+                        "Procedure Statuses": selectedProcedureStatuses,
+                        "Notes": notesController.text,
+                      };
+        
+                      sqlStr = buildBaseSelectStatement2(
+                          fields, fieldsMap, selectedFields);
+                      String fullSqlStr = buildDynamicSqlQuery1(
+                          criteria, sqlStr, fieldGroupList);
+        
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BlocProvider(
+                            create: (context) =>
+                                GetGeneratedReportResultCubit(
+                              DataRepoImpl(
+                                ApiService(
+                                  Dio(),
+                                ),
+                              ),
+                            )..fetchPatientsWithSoapRequest(fullSqlStr),
+                            child: const ReportResultScreen(),
+                          ),
+                        ),
+                      );
+                    },
+                    text: "Generate Report",
+                  ),
+                  CustomElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        birthDateController.clear();
+                        visitDateFromController.clear();
+                        visitDateToController.clear();
+                        selectedProcedures.clear();
+                        selectedProcedureStatuses.clear();
+                        notesController.clear();
+                      });
+                    },
+                    text: "Clear",
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

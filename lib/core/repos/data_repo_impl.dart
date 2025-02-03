@@ -22,7 +22,7 @@ class DataRepoImpl implements DataRepo {
     try {
       var data = await apiService.getSoapRequest(
           action: action,
-          password: "OptimalPass",
+          //password: "OptimalPass",
           newName: newName,
           currentFolder: currentFolder,
           filePath: filePath,
@@ -43,7 +43,8 @@ class DataRepoImpl implements DataRepo {
       String action, String sqlStr) async {
     try {
       var data = await apiService.sqlSoapRequest(
-          action: action, password: "OptimalPass_optimaljo05", sqlStr: sqlStr);
+          action: action,
+          /*password: "OptimalPass_optimaljo05",*/ sqlStr: sqlStr);
 
       return right(data);
     } catch (error) {

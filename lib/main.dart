@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hand_write_notes/delete_patient_cubit/cubit/delete_patient_cubit.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/cubit/login_cubit.dart';
@@ -28,7 +29,8 @@ class SimpleBlocObserver extends BlocObserver {
   }
 }
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: "lib/.env");
   Bloc.observer = SimpleBlocObserver();
   runApp(const MyApp());
 }
@@ -136,8 +138,7 @@ class MyApp extends StatelessWidget {
             ),
             useMaterial3: true,
           ),
-          home: 
-          FutureBuilder<User?>(
+          home: FutureBuilder<User?>(
             future: BlocProvider.of<SaveUserLocallyCubit>(context).getUser(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {

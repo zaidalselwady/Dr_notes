@@ -170,7 +170,7 @@ class _ProceduresDialogState extends State<ProceduresDialog> {
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop([99999]); // Close dialog without saving
+            Navigator.of(context).pop(); // Close dialog without saving
           },
           child: const Text('Cancel'),
         ),

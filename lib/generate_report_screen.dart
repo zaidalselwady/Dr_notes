@@ -156,20 +156,19 @@ class _ReportingScreenState extends State<ReportingScreen> {
 
   String buildDynamicSqlQuery1(Map<String, dynamic> criteria, String baseQuery,
       List<String?> groupByFields) {
-    fieldsMap.removeWhere((key, value) => !selectedFields.contains(key));
-    List<Map> updatedList = fieldsMap.entries
-        .where((entry) => selectedFields.contains(entry.key))
-        .map((entry) => entry.value)
-        .toList();
     String sqlStr = baseQuery;
     List<String> conditions = [];
 
     // ✅ Handle Visit Date conditions properly
     if (criteria['Visit Date From']?.isNotEmpty ?? false) {
-      conditions.add("Visit_Date >= '${criteria['Visit Date From']}'");
+      if (criteria['Visit Date To']?.isEmpty ?? false) {
+        conditions.add("Visit_Date >= '${criteria['Visit Date From']}'");
+      }
     }
     if (criteria['Visit Date To']?.isNotEmpty ?? false) {
-      conditions.add("Visit_Date <= '${criteria['Visit Date To']}'");
+      if (criteria['Visit Date From']?.isEmpty ?? false) {
+        conditions.add("Visit_Date <= '${criteria['Visit Date To']}'");
+      }
     }
     if ((criteria['Visit Date From']?.isNotEmpty ?? false) &&
         (criteria['Visit Date To']?.isNotEmpty ?? false)) {
@@ -248,7 +247,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
   String buildBaseSelectStatement2(List<FieldInfo> fields,
       Map<int, Map> fieldsMap, List<int> selectedFields) {
     // Create a map from the list for easier access by field id
-    Map<int, FieldInfo> fieldsMap = {
+    Map<int, FieldInfo> fieldsMapCopy = {
       for (var field in fields) field.id: field,
     };
 
@@ -256,7 +255,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
     // fieldsMap.removeWhere((key, value) => !selectedFields.contains(key));
 
     // Create a list of the updated fields (now only the selected ones)
-    List<FieldInfo> updatedFields = fieldsMap.entries
+    List<FieldInfo> updatedFields = fieldsMapCopy.entries
         .where((entry) => selectedFields.contains(entry.key))
         .map((entry) => entry.value)
         .toList();
@@ -382,7 +381,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
                           setState(() {
                             visitDateFromController.text =
                                 pickedDate.toIso8601String().split('T').first;
-        
+
                             // Validate date range
                             if (visitDateToController.text.isNotEmpty) {
                               DateTime visitDateTo =
@@ -426,11 +425,11 @@ class _ReportingScreenState extends State<ReportingScreen> {
                           setState(() {
                             visitDateToController.text =
                                 pickedDate.toIso8601String().split('T').first;
-        
+
                             // Validate date range
                             if (visitDateFromController.text.isNotEmpty) {
-                              DateTime visitDateFrom = DateTime.parse(
-                                  visitDateFromController.text);
+                              DateTime visitDateFrom =
+                                  DateTime.parse(visitDateFromController.text);
                               if (visitDateFrom.isAfter(pickedDate)) {
                                 visitDateToController.clear();
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -521,7 +520,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
                             DateTime.parse(visitDateFromController.text);
                         DateTime visitDateTo =
                             DateTime.parse(visitDateToController.text);
-        
+
                         if (visitDateFrom.isAfter(visitDateTo)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -532,7 +531,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
                           return;
                         }
                       }
-        
+
                       // Logic to generate the report based on criteria
                       final criteria = {
                         "Birth Date": birthDateController.text,
@@ -542,18 +541,17 @@ class _ReportingScreenState extends State<ReportingScreen> {
                         "Procedure Statuses": selectedProcedureStatuses,
                         "Notes": notesController.text,
                       };
-        
+
                       sqlStr = buildBaseSelectStatement2(
                           fields, fieldsMap, selectedFields);
                       String fullSqlStr = buildDynamicSqlQuery1(
                           criteria, sqlStr, fieldGroupList);
-        
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => BlocProvider(
-                            create: (context) =>
-                                GetGeneratedReportResultCubit(
+                            create: (context) => GetGeneratedReportResultCubit(
                               DataRepoImpl(
                                 ApiService(
                                   Dio(),

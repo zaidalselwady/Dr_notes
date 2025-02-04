@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:hand_write_notes/canvas_screen/presentation/view/canvas_screen.dart';
 import 'package:hand_write_notes/get_files_cubit/cubit/get_files_cubit.dart';
 import 'package:hand_write_notes/information_screen/data/child_info_model.dart';
@@ -19,6 +20,9 @@ import '../../../show_info_screen/presentation/manger/update_patient_info_cubit/
 import '../../../update_patient_state_cubit/cubit/update_patient_state_cubit.dart';
 import '../../data/image_model.dart';
 import 'widgets/full_screen_img_view.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
 
 class PatientVisitsScreen extends StatefulWidget {
   const PatientVisitsScreen(
@@ -34,49 +38,60 @@ class PatientVisitsScreen extends StatefulWidget {
   State<PatientVisitsScreen> createState() => _PatientVisitsScreenState();
 }
 
+// Future<File> _cacheImage(Uint8List imageBytes, int index) async {
+//   final cacheManager = DefaultCacheManager();
+//   final cacheKey = "image_$index"; // Unique key for each image
+
+//   // ✅ Check if image exists in cache
+//   final fileInfo = await cacheManager.getFileFromCache(cacheKey);
+//   if (fileInfo != null) {
+//     return fileInfo.file; // Return cached image
+//   }
+
+//   // ✅ Store Uint8List as a file in cache
+//   final file = await cacheManager.putFile(cacheKey, imageBytes);
+//   return file;
+// }
+
 class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
+  int calculateAgeInYears(String birthDate) {
+    try {
+      // Define possible date formats
+      final List<String> dateFormats = ['d-M-yyyy', 'dd-MM-yyyy', 'yyyy-MM-dd'];
+
+      DateTime? parsedDate;
+      for (String format in dateFormats) {
+        try {
+          parsedDate = DateFormat(format).parseStrict(birthDate);
+          break; // Exit loop if parsing succeeds
+        } catch (_) {
+          continue; // Try the next format
+        }
+      }
+
+      // Throw an error if no format matched
+      if (parsedDate == null) {
+        throw FormatException(
+            "Invalid date format. Expected formats: ${dateFormats.join(', ')}");
+      }
+
+      // Get the current date
+      final DateTime today = DateTime.now();
+      // Calculate the difference in years
+      int age = today.year - parsedDate.year;
+      // Adjust for cases where the birth date has not occurred yet this year
+      if (today.month < parsedDate.month ||
+          (today.month == parsedDate.month && today.day < parsedDate.day)) {
+        age--;
+      }
+      return age;
+    } catch (e) {
+      throw FormatException("Invalid date format: $birthDate");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    int calculateAgeInYears(String birthDate) {
-      try {
-        // Define possible date formats
-        final List<String> dateFormats = [
-          'd-M-yyyy',
-          'dd-MM-yyyy',
-          'yyyy-MM-dd'
-        ];
-
-        DateTime? parsedDate;
-        for (String format in dateFormats) {
-          try {
-            parsedDate = DateFormat(format).parseStrict(birthDate);
-            break; // Exit loop if parsing succeeds
-          } catch (_) {
-            continue; // Try the next format
-          }
-        }
-
-        // Throw an error if no format matched
-        if (parsedDate == null) {
-          throw FormatException(
-              "Invalid date format. Expected formats: ${dateFormats.join(', ')}");
-        }
-
-        // Get the current date
-        final DateTime today = DateTime.now();
-        // Calculate the difference in years
-        int age = today.year - parsedDate.year;
-        // Adjust for cases where the birth date has not occurred yet this year
-        if (today.month < parsedDate.month ||
-            (today.month == parsedDate.month && today.day < parsedDate.day)) {
-          age--;
-        }
-        return age;
-      } catch (e) {
-        throw FormatException("Invalid date format: $birthDate");
-      }
-    }
-
     int age = calculateAgeInYears(widget.patientsInfo.birthDate);
 
     return BlocProvider(
@@ -84,7 +99,7 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
         DataRepoImpl(
           ApiService(Dio()),
         ),
-      )..getImages("P${widget.patientId}"),
+      )..getImages3("P${widget.patientId}"),
       child: Scaffold(
         appBar: AppBar(),
         body: Container(
@@ -114,7 +129,7 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
                             onRefresh: () async {
                               context
                                   .read<GetFilesCubit>()
-                                  .getImages("P${widget.patientId}");
+                                  .getImages3("P${widget.patientId}");
                             },
                             child: GridView.builder(
                               gridDelegate:
@@ -144,7 +159,7 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
                             onRefresh: () async {
                               context
                                   .read<GetFilesCubit>()
-                                  .getImages("P${widget.patientId}");
+                                  .getImages3("P${widget.patientId}");
                             },
                             state: state,
                             msg: "No Visits",
@@ -155,7 +170,7 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
                           onRefresh: () async {
                             context
                                 .read<GetFilesCubit>()
-                                .getImages("P${widget.patientId}");
+                                .getImages3("P${widget.patientId}");
                           },
                           state: state,
                           msg: state.error,
@@ -168,6 +183,70 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
                     },
                   ),
                 )
+
+              // Expanded(
+              //   child: BlocBuilder<GetFilesCubit, GetFilesState>(
+              //     builder: (context, state) {
+              //       if (state is GetFilesSuccess) {
+              //         if (state.images.isNotEmpty) {
+              //           return RefreshIndicator(
+              //             onRefresh: () async {
+              //               context
+              //                   .read<GetFilesCubit>()
+              //                   .getImages("P${widget.patientId}");
+              //             },
+              //             child: GridView.builder(
+              //               gridDelegate:
+              //                   const SliverGridDelegateWithFixedCrossAxisCount(
+              //                 crossAxisCount: 3,
+              //                 crossAxisSpacing: 4,
+              //                 mainAxisSpacing: 4,
+              //               ),
+              //               itemCount: state.images.length,
+              //               itemBuilder: (context, index) {
+              //                 return GestureDetector(
+              //                   onTap: () => viewImage(state.images, index),
+              //                   child: Image.memory(
+              //                     errorBuilder: (context, error, stackTrace) {
+              //                       return const Icon(
+              //                           Icons.image_not_supported_rounded);
+              //                     },
+              //                     state.images[index].imgBase64,
+              //                     fit: BoxFit.fill,
+              //                   ),
+              //                 );
+              //               },
+              //             ),
+              //           );
+              //         } else {
+              //           return WarningMsgScreen(
+              //             onRefresh: () async {
+              //               context
+              //                   .read<GetFilesCubit>()
+              //                   .getImages("P${widget.patientId}");
+              //             },
+              //             state: state,
+              //             msg: "No Visits",
+              //           );
+              //         }
+              //       } else if (state is GetFilesFaild) {
+              //         return WarningMsgScreen(
+              //           onRefresh: () async {
+              //             context
+              //                 .read<GetFilesCubit>()
+              //                 .getImages("P${widget.patientId}");
+              //           },
+              //           state: state,
+              //           msg: state.error,
+              //         );
+              //       } else {
+              //         return const Center(
+              //           child: CircularProgressIndicator(),
+              //         );
+              //       }
+              //     },
+              //   ),
+              // )
               else
                 const Center(
                     child: Text(

@@ -322,7 +322,7 @@ class CustomDrawer extends StatelessWidget {
                                   child: const Text("Logout"),
                                   onPressed: () async {
                                     await _deleteUserData();
-                                    //Restart.restartApp();
+                                    Restart.restartApp();
                                   }),
                               TextButton(
                                   child: const Text("Cancel"),

@@ -235,7 +235,7 @@ class _HandwritingScreenState extends State<HandwritingScreen> {
                   ); // Your dialog
                 },
               );
-              if (context.mounted && selectedProcedures?[0] != 99999) {
+              if (context.mounted && selectedProcedures != null) {
                 convertCubit.convertCanvasToB64(context, _paths, _currentPath,
                     _isErasing, selectedProcedures ?? []);
               }

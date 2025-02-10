@@ -180,7 +180,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ),
             useMaterial3: true,
           ),
-          home: FutureBuilder<User?>(
+          home: 
+          FutureBuilder<User?>(
             future: BlocProvider.of<SaveUserLocallyCubit>(context).getUser(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -188,11 +189,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               }
               if (snapshot.data != null && snapshot.data?.rememberMe == true) {
                 return SplashScreen(user: snapshot.data!.userName);
-                // if (snapshot.data!.userName == "Dr") {
-                //   return const PatientsInClinic();
-                // } else {
-                //   return const AllPatientsScreen();
-                // }
               }
               return const LoginScreen(); // User not logged in
             },

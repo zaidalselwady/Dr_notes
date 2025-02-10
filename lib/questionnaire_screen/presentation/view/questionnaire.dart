@@ -68,7 +68,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         clipBehavior: Clip.none,
-        title: const Text('Questionnaire'),
+        title: const Text('Health Questionnaire'),
       ),
       body: Column(
         children: [
@@ -158,7 +158,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   return 'Q$index = $answer';
                 }).join(', ');
                 // Update the questionnaire list with the latest answers
-                await updateCubit.updateClientsWithSoapRequest(
+                await updateCubit.updatePatient(
                   "UPDATE Patients_Questionnaire SET $qAndA WHERE Patient_Id=${widget.patientInfo.patientId}",
                 );
               } else {

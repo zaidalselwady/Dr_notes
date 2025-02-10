@@ -1,7 +1,7 @@
 class User {
   final int userId; // User ID
   final String userName; // User name
-  final String password; // User password (preferably hashed)
+   final String password; // User password (preferably hashed)
   final int userType; // User type (e.g., admin = 1, user = 2)
   final String permissions; // User permissions as a comma-separated string
   final bool rememberMe;

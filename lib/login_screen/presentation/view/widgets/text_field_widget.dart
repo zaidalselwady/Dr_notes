@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -41,14 +40,14 @@ class MyCustomTextField extends StatelessWidget {
           filled: true,
           fillColor: const Color(0xffFFFFFF),
           errorBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.red),
-              borderRadius: BorderRadius.all(Radius.circular(30))),
+            borderSide: BorderSide(color: Colors.red),
+          ),
           focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.black),
-              borderRadius: BorderRadius.all(Radius.circular(30))),
+            borderSide: BorderSide(color: Colors.black),
+          ),
           enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.black),
-              borderRadius: BorderRadius.all(Radius.circular(30))),
+            borderSide: BorderSide(color: Colors.black),
+          ),
           labelStyle: const TextStyle(color: Colors.black, fontSize: 20),
           labelText: lableText,
           //prefixIcon: Icon(icon),

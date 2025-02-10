@@ -2,15 +2,13 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hand_write_notes/core/repos/data_repo_impl.dart';
 import 'package:hand_write_notes/core/utils/api_service.dart';
 import 'package:hand_write_notes/get_proc_cubit/cubit/get_proc_cubit.dart';
-import 'package:hand_write_notes/patients_screen/presentation/view/patients_in_clinic_screen.dart';
 import 'package:hand_write_notes/patients_visits_insert_cubit/cubit/upload_patient_visits_cubit.dart';
-import 'package:hand_write_notes/update_patient_state_cubit/cubit/update_patient_state_cubit.dart';
 import 'package:hand_write_notes/upload_files_cubit/cubit/upload_files_cubit.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../convert_canvas_B64_cubit/cubit/convert_canvas_b64_cubit.dart';
@@ -49,8 +47,8 @@ class _HandwritingScreenState extends State<HandwritingScreen> {
     Future<void> captureAndUploadImage() async {
       try {
         // Open the camera and capture the image
-        final XFile? photo = await picker.pickImage(source: ImageSource.camera);
-
+        final XFile? photo = await picker.pickImage(
+            source: ImageSource.camera, imageQuality: 10);
         if (photo != null) {
           // Read the image file
           File imageFile = File(photo.path);
@@ -59,7 +57,6 @@ class _HandwritingScreenState extends State<HandwritingScreen> {
           String base64Image = base64Encode(imageBytes);
           uploadCubit.uploadPhoto(
               "folderName", base64Image, formattedDate, "P${widget.patientId}");
-          //recognizeText1(base64Image);
         }
       } catch (e) {}
     }

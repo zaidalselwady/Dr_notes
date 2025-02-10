@@ -67,7 +67,7 @@ class _PatientConfirmationScreenState extends State<PatientConfirmationScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-            
+
                 // Success Message
                 Text(
                   'Information Saved Successfully!',
@@ -79,7 +79,7 @@ class _PatientConfirmationScreenState extends State<PatientConfirmationScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-            
+
                 // Description
                 Text(
                   'Thank you for providing your information.\nYou will be redirected shortly.',
@@ -90,15 +90,9 @@ class _PatientConfirmationScreenState extends State<PatientConfirmationScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-            
-                // Progress Indicator
-                const CircularProgressIndicator(
-                  color: Colors.blueGrey,
-                  strokeWidth: 3,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(),
+
                 TextFormField(
+                  obscureText: true,
                   cursorColor: const Color(0xFF00695C),
                   style: const TextStyle(color: Color(0xFF00695C)),
                   onChanged: (value) {

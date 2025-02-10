@@ -74,13 +74,17 @@ class GetPatientsCubit extends Cubit<GetPatientsState> {
       );
     } else if (RegExp(r"^[a-zA-Z\u0600-\u06FF\s]+$").hasMatch(enteredKeyword)) {
       emit(GettingPatients());
-      results = patients
-          .where(
-            (user) => user.name.toLowerCase().contains(
-                  enteredKeyword.toLowerCase().trim(),
-                ),
-          )
-          .toList();
+      results = patients.where((user) {
+        String name = user.name.toLowerCase();
+        String firstName = user.firstName.toLowerCase();
+        String middleName = user.midName.toLowerCase();
+        String lastName = user.lastName.toLowerCase();
+
+        return name.contains(enteredKeyword.toLowerCase().trim()) ||
+            firstName.contains(enteredKeyword.toLowerCase().trim()) ||
+            middleName.contains(enteredKeyword.toLowerCase().trim()) ||
+            lastName.contains(enteredKeyword.toLowerCase().trim());
+      }).toList();
       filteresdPatientsList = results;
       emit(
         GetPatientsSuccess(patients: filteresdPatientsList),

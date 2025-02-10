@@ -1,6 +1,9 @@
 class PatientInfo {
   int patientId;
   String name;
+  String firstName;
+  String midName;
+  String lastName;
   String birthDate;
   String address;
   String phone;
@@ -12,6 +15,9 @@ class PatientInfo {
   PatientInfo({
     this.patientId = 0,
     required this.name,
+    required this.firstName,
+    required this.midName,
+    required this.lastName,
     required this.birthDate,
     required this.address,
     required this.phone,
@@ -26,6 +32,9 @@ class PatientInfo {
     return {
       'Patient_Id': patientId,
       'name': name,
+      'FirstName': firstName,
+      'LastName': lastName,
+      'MiddleName': midName,
       'birthDate': birthDate,
       'address': address,
       'phone': phone,
@@ -40,6 +49,9 @@ class PatientInfo {
     return PatientInfo(
       patientId: json['Patient_Id'],
       name: json['name'],
+      firstName: json['FirstName'] ?? "",
+      midName: json['MiddleName'] ?? "",
+      lastName: json['LastName'] ?? "",
       birthDate: json['birthDate'],
       address: json['address'],
       phone: json['phone'],
@@ -51,6 +63,6 @@ class PatientInfo {
   }
   @override
   String toString() {
-    return 'QuestionnaireModel(Patient_Id: $patientId,name: $name,birthDate: $birthDate,address: $address,  phone: $phone,email: $email,school: $school,motherName: $motherName,isOnClinic: $isInClinic)';
+    return 'QuestionnaireModel(Patient_Id: $patientId,name: $name,FirstName:$firstName,    MiddleName:$midName,LastName:$lastName,birthDate: $birthDate,address: $address,  phone: $phone,email: $email,school: $school,motherName: $motherName,isOnClinic: $isInClinic)';
   }
 }

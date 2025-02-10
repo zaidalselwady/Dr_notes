@@ -8,7 +8,7 @@ part 'update_patient_state_state.dart';
 class UpdatePatientStateCubit extends Cubit<UpdatePatientStateState> {
   UpdatePatientStateCubit(this.dataRepo) : super(UpdatePatientStateInitial());
   final DataRepo dataRepo;
-  Future<void> updateClientsWithSoapRequest(String sqlStr) async {
+  Future<void> updatePatient(String sqlStr) async {
     emit(UpdatingPatientState());
     var result =
         await dataRepo.fetchWithSoapRequest("Insert_Update_cmd", sqlStr);

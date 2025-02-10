@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hand_write_notes/change_password_screen.dart';
 import 'package:hand_write_notes/get_proc_cubit/cubit/get_proc_cubit.dart';
 import 'package:hand_write_notes/information_screen/presentation/view/info.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/save_user_locally_cubit/cubit/save_user_locally_cubit.dart';
@@ -277,15 +278,22 @@ class CustomDrawer extends StatelessWidget {
                         style: const TextStyle(fontSize: 40)),
                   ),
                 ),
-                // ListTile(
-                //   enabled: false,
-                //   leading: const Icon(Icons.home),
-                //   title: const Text('Home'),
-                //   onTap: () {
-                //     // Add action for Home
-                //     Navigator.pushReplacementNamed(context, '/');
-                //   },
-                // ),
+                ListTile(
+                  leading: const Icon(Icons.password),
+                  title: const Text('Change password'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlocProvider(
+                          create: (context) => UpdatePatientStateCubit(
+                              DataRepoImpl(ApiService(Dio()))),
+                          child: ChangePasswordScreen(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 // ListTile(
                 //   enabled: false,
                 //   leading: const Icon(Icons.report),

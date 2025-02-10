@@ -71,7 +71,7 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
                 if (updatedProcedures != null) {
                   for (var element in updatedProcedures) {
                     if (element['id'] != 0 && element['id'] != null) {
-                      updateCubit.updateClientsWithSoapRequest(
+                      updateCubit.updatePatient(
                           "UPDATE Patients_Visits SET Procedure_Status = ${element['percentage']},Notes='${element['notes']}' WHERE id=${element['id']}");
                     } else {
                       tempProcList.clear();

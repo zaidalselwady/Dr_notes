@@ -23,6 +23,10 @@ class _ShowInfoScreenState extends State<ShowInfoScreen> {
   late TextEditingController phoneController;
   late TextEditingController emailController;
   late TextEditingController schoolController;
+  late TextEditingController nameController;
+  late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
+  late TextEditingController middleNameController;
 
   @override
   void initState() {
@@ -31,6 +35,13 @@ class _ShowInfoScreenState extends State<ShowInfoScreen> {
     phoneController = TextEditingController(text: widget.patientInfo.phone);
     emailController = TextEditingController(text: widget.patientInfo.email);
     schoolController = TextEditingController(text: widget.patientInfo.school);
+    nameController = TextEditingController(text: widget.patientInfo.name);
+    firstNameController =
+        TextEditingController(text: widget.patientInfo.firstName);
+    lastNameController =
+        TextEditingController(text: widget.patientInfo.lastName);
+    middleNameController =
+        TextEditingController(text: widget.patientInfo.midName);
   }
 
   @override
@@ -91,14 +102,32 @@ class _ShowInfoScreenState extends State<ShowInfoScreen> {
                                   widget.patientInfo.birthDate),
                               _infoRow(Icons.person, "Mother's Name",
                                   widget.patientInfo.motherName),
-                              _infoRow(Icons.local_hospital, "In Clinic",
-                                  widget.patientInfo.isInClinic ? "Yes" : "No"),
                             ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       // Editable Fields
+                      _editableField(
+                        controller: nameController,
+                        label: "Name",
+                        icon: Icons.person,
+                      ),
+                      _editableField(
+                        controller: firstNameController,
+                        label: "First Name",
+                        icon: Icons.person,
+                      ),
+                      _editableField(
+                        controller: middleNameController,
+                        label: "Middle Name",
+                        icon: Icons.person,
+                      ),
+                      _editableField(
+                        controller: lastNameController,
+                        label: "Last Name",
+                        icon: Icons.person,
+                      ),
                       _editableField(
                         controller: addressController,
                         label: "Address",
@@ -133,7 +162,12 @@ class _ShowInfoScreenState extends State<ShowInfoScreen> {
                                         addressController.text,
                                         emailController.text,
                                         phoneController.text,
-                                        schoolController.text);
+                                        schoolController.text,
+                                        nameController.text,
+                                        firstNameController.text,
+                                        middleNameController.text,
+                                        lastNameController.text
+                                        );
                                 setState(() {
                                   isEditMode = false;
                                 });

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:meta/meta.dart';
 import 'package:xml/xml.dart' as xml;
@@ -207,6 +208,7 @@ class GetFilesCubit extends Cubit<GetFilesState> {
   }
 
   Future<List<ImageModel>> getImages3(String folderName) async {
+    debugPrint("Started ${DateTime.now()}");
     emit(GettingFiles());
 
     final DefaultCacheManager cacheManager = DefaultCacheManager();
@@ -266,6 +268,7 @@ class GetFilesCubit extends Cubit<GetFilesState> {
                   newImage); // Add the new image if it's not already in the list
               existingImageHashes
                   .add(newImageHash); // Add to the set of existing hashes
+              debugPrint("Added new image: ${DateTime.now()}");
             }
           }
 

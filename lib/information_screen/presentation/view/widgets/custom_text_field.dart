@@ -31,7 +31,7 @@ class _DecoratedTextFieldState extends State<DecoratedTextField> {
     double height = MediaQuery.of(context).size.height;
     return Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: width * 0.05, vertical: height * 0.02),
+          horizontal: width * 0.05, vertical: height * 0.005),
       child: TextFormField(
         readOnly: widget.readOnly,
         onTap: widget.onTap,

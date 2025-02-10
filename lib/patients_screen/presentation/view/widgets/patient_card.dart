@@ -119,56 +119,68 @@ class _PatientCardState extends State<PatientCard> {
         children: [
           Expanded(
             child: InkWell(
-              onTap: () async {
-                int id = widget.patientsInfo.patientId;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (context) => PatientQuestionnaireCubit(
-                        DataRepoImpl(
-                          ApiService(
-                            Dio(),
+                onTap: () async {
+                  int id = widget.patientsInfo.patientId;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BlocProvider(
+                        create: (context) => PatientQuestionnaireCubit(
+                          DataRepoImpl(
+                            ApiService(
+                              Dio(),
+                            ),
                           ),
                         ),
-                      ),
-                      child: PatientVisitsScreen(
-                        user: user!,
-                        patientsInfo: widget.patientsInfo,
-                        patientId: id,
+                        child: PatientVisitsScreen(
+                          user: user!,
+                          patientsInfo: widget.patientsInfo,
+                          patientId: id,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-              child: Card(
-                color: const Color(0xffFFFFFF),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("assets/patients.png"),
-                      opacity: 0.2,
-                      fit: BoxFit.cover,
+                  );
+                },
+                child: Card(
+                  color: const Color(0xffFFFFFF),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage("assets/patients.png"),
+                        opacity: 0.2,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.patientsInfo.name,
+                    child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${widget.patientsInfo.firstName} ${widget.patientsInfo.midName} ${widget.patientsInfo.lastName}",
+                            style: GoogleFonts.cairo(
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.045,
+                              color: const Color(0xFF243642),
+                            ),
+                            textDirection: TextDirection.rtl,
+                          ),
+                          const SizedBox(
+                              height: 5), // Small space between names
+                          Text(
+                            widget.patientsInfo.name, // Arabic Name
                             style: GoogleFonts.lilitaOne(
-                                fontSize: 22, color: const Color(0xFF243642)),
+                              // Use an Arabic-friendly font
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.035,
+                              color: Colors.grey[800],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
+                )),
           ),
           BlocBuilder<UpdatePatientStateCubit, UpdatePatientStateState>(
             builder: (context, state) {
@@ -277,7 +289,7 @@ class _ToggleButtonWidgetState extends State<ToggleButtonWidget> {
               });
 
               // Perform the database update
-              widget.updateCubit.updateClientsWithSoapRequest(
+              widget.updateCubit.updatePatient(
                 "UPDATE Patients_Info SET isOnClinic = ${widget.patientsInfo.isInClinic ? 1 : 0} WHERE Patient_Id=${widget.patientsInfo.patientId}",
               );
             },

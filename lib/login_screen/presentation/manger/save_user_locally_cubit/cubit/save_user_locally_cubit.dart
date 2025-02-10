@@ -36,4 +36,28 @@ class SaveUserLocallyCubit extends Cubit<SaveUserLocallyState> {
     await prefs.clear(); // Clears only user data
     //emit(GetUserLocally(user: null)); // Emit an empty user state
   }
+
+  Future<void> updatePassword(String newPassword) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Retrieve the current user data
+    final userData = prefs.getString('user');
+    if (userData != null) {
+      // Convert user data to a User object
+      User user = User.fromMap(jsonDecode(userData));
+
+      // Update the password in the user object
+      User updatedUser = User(
+        userId: user.userId,
+        userName: user.userName,
+        password: newPassword,
+        userType: user.userType,
+        permissions: user.permissions,
+        rememberMe: user.rememberMe,
+      );
+
+      // Save the updated user data back to SharedPreferences
+      await prefs.setString('user', jsonEncode(updatedUser.toMap()));
+    }
+  }
 }

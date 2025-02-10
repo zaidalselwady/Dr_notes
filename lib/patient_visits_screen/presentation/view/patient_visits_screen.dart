@@ -393,9 +393,10 @@ class PatientInfoCard extends StatelessWidget {
                           }
                         },
                         child: Text(
+                          
                           patientInfo.name,
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style:  TextStyle(
+                            fontSize: MediaQuery.of(context).size.width * 0.035,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -501,7 +502,7 @@ class PatientInfoCard extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () {
-                      updateCubit.updateClientsWithSoapRequest(
+                      updateCubit.updatePatient(
                           "UPDATE Patients_Info SET isOnClinic = 0 WHERE Patient_Id=${patientInfo.patientId}");
                     },
                     child: Text(

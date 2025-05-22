@@ -5,10 +5,8 @@ import '../../../data/proc_model.dart';
 
 class ProceduresDialog extends StatefulWidget {
   const ProceduresDialog(
-      {super.key, required this.visitDate, required this.patientId});
+      {super.key});
 
-  final String visitDate;
-  final int patientId;
 
   @override
   _ProceduresDialogState createState() => _ProceduresDialogState();

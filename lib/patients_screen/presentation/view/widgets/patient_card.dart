@@ -169,11 +169,12 @@ class _PatientCardState extends State<PatientCard> {
                               height: 5), // Small space between names
                           Text(
                             widget.patientsInfo.name, // Arabic Name
-                            style: GoogleFonts.lilitaOne(
+                            style: GoogleFonts.roboto(
                               // Use an Arabic-friendly font
                               fontSize:
                                   MediaQuery.of(context).size.width * 0.035,
                               color: Colors.grey[800],
+                              fontWeight: FontWeight.w700
                             ),
                           ),
                         ],

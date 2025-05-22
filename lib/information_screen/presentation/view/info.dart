@@ -25,11 +25,12 @@ class _MyWidgetState extends State<MyWidget> {
 
   Future<String> translateNameWithAi(String arabicName) async {
     String? apiKey = dotenv.env['GEMINI_API_KEY'];
-    final model = GenerativeModel(model: "gemini-pro", apiKey: apiKey!);
+    final model = GenerativeModel(model: "gemini-2.0-flash", apiKey: apiKey!);
+
     final prompt =
         "Write this Arabic name in English Using its most common English spelling: $arabicName";
     final prompt2 =
-        "Transliterate the Arabic name '$arabicName' into English using the most common and widely accepted spelling. If there are multiple common spellings, provide the most frequent one. Prioritize standard Latin alphabetic characters (a-z, A-Z).";
+        "Transliterate the Arabic name '$arabicName' into English using the most common and widely accepted spelling. If there are multiple common spellings, provide the most frequent one. Prioritize standard Latin alphabetic characters (a-z, A-Z).Just return the name in English";
 
     final response = await model.generateContent([Content.text(prompt2)]);
 
@@ -39,116 +40,118 @@ class _MyWidgetState extends State<MyWidget> {
   @override
   Widget build(BuildContext context) {
     GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    //double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         child: Form(
           key: formKey,
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                const AnimatedImageWidget(),
-                DecoratedTextField(
-                  labelText: "الاسم الاول",
-                  controller: firstNameCon,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(Icons.person_2),
-                ),
-                DecoratedTextField(
-                  labelText: "الاسم الثاني",
-                  controller: midNameCon,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(Icons.person_2),
-                ),
-                DecoratedTextField(
-                  labelText: "الاسم الاخير",
-                  controller: lastNameCon,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(Icons.person_2),
-                ),
-                DecoratedTextField(
-                  labelText: "English name",
-                  controller: nameCon,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(Icons.abc),
-                  onTap: () async {
-                    if (firstNameCon.text.isNotEmpty &&
-                        midNameCon.text.isNotEmpty &&
-                        lastNameCon.text.isNotEmpty &&
-                        nameCon.text.isEmpty) {
-                      // String name = await translateName(
-                      //     "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
-                      // translateText(
-                      //     "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
-                      String nameAi = await translateNameWithAi(
-                          "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal:   10),
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  const AnimatedImageWidget(),
+                  DecoratedTextField(
+                    labelText: "الاسم الاول",
+                    controller: firstNameCon,
+                    keyboardType: TextInputType.name,
+                    prefixIcon: const Icon(Icons.person_2),
+                  ),
+                  DecoratedTextField(
+                    labelText: "الاسم الثاني",
+                    controller: midNameCon,
+                    keyboardType: TextInputType.name,
+                    prefixIcon: const Icon(Icons.person_2),
+                  ),
+                  DecoratedTextField(
+                    labelText: "الاسم الاخير",
+                    controller: lastNameCon,
+                    keyboardType: TextInputType.name,
+                    prefixIcon: const Icon(Icons.person_2),
+                  ),
+                  DecoratedTextField(
+                    labelText: "English name",
+                    controller: nameCon,
+                    keyboardType: TextInputType.name,
+                    prefixIcon: const Icon(Icons.abc),
+                    onTap: () async {
+                      if (firstNameCon.text.isNotEmpty &&
+                          midNameCon.text.isNotEmpty &&
+                          lastNameCon.text.isNotEmpty &&
+                          nameCon.text.isEmpty) {
+                        // String name = await translateName(
+                        //     "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
+                        // translateText(
+                        //     "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
+                        String nameAi = await translateNameWithAi(
+                            "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
 
-                      nameCon.text = nameAi;
-                    }
-                  },
-                ),
-                DecoratedTextField(
-                  readOnly: true,
-                  labelText: "Birth date",
-                  controller: birthDateCon,
-                  keyboardType: TextInputType.datetime,
-                  prefixIcon: const Icon(Icons.date_range),
-                  onTap: () {
-                    showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime.now(),
-                    ).then((pickedDate) async {
-                      if (pickedDate != null) {
-                        birthDateCon.text =
-                            "${pickedDate.toLocal()}".split(' ')[0];
-                        // if (firstNameCon.text.isNotEmpty &&
-                        //     midNameCon.text.isNotEmpty &&
-                        //     lastNameCon.text.isNotEmpty) {
-                        //   String name = await translateName(
-                        //       "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
-                        //   setState(() {
-                        //     nameCon.text = name;
-                        //   });
-                        // }
+                        nameCon.text = nameAi;
                       }
-                    });
-                  },
-                ),
-                DecoratedTextField(
-                  labelText: "Address",
-                  controller: addressCon,
-                  keyboardType: TextInputType.streetAddress,
-                  prefixIcon: const Icon(Icons.location_city),
-                ),
-                DecoratedTextField(
-                  labelText: "Phone",
-                  controller: phoneCon,
-                  keyboardType: TextInputType.number,
-                  prefixIcon: const Icon(Icons.phone),
-                ),
-                DecoratedTextField(
-                  labelText: "E-mail",
-                  controller: emailCon,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: const Icon(Icons.email),
-                ),
-                DecoratedTextField(
-                  labelText: "School",
-                  controller: schoolCon,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(Icons.school),
-                ),
-                DecoratedTextField(
-                  labelText: "Mother's name",
-                  controller: motherNameCon,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(Icons.person_3_sharp),
-                ),
-              ]),
+                    },
+                  ),
+                  DecoratedTextField(
+                    readOnly: true,
+                    labelText: "Birth date",
+                    controller: birthDateCon,
+                    keyboardType: TextInputType.datetime,
+                    prefixIcon: const Icon(Icons.date_range),
+                    onTap: () {
+                      showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now(),
+                      ).then((pickedDate) async {
+                        if (pickedDate != null) {
+                          birthDateCon.text =
+                              "${pickedDate.toLocal()}".split(' ')[0];
+                          // if (firstNameCon.text.isNotEmpty &&
+                          //     midNameCon.text.isNotEmpty &&
+                          //     lastNameCon.text.isNotEmpty) {
+                          //   String name = await translateName(
+                          //       "${firstNameCon.text} ${midNameCon.text} ${lastNameCon.text}");
+                          //   setState(() {
+                          //     nameCon.text = name;
+                          //   });
+                          // }
+                        }
+                      });
+                    },
+                  ),
+                  DecoratedTextField(
+                    labelText: "Address",
+                    controller: addressCon,
+                    keyboardType: TextInputType.streetAddress,
+                    prefixIcon: const Icon(Icons.location_city),
+                  ),
+                  DecoratedTextField(
+                    labelText: "Phone",
+                    controller: phoneCon,
+                    keyboardType: TextInputType.number,
+                    prefixIcon: const Icon(Icons.phone),
+                  ),
+                  DecoratedTextField(
+                    labelText: "E-mail",
+                    controller: emailCon,
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: const Icon(Icons.email),
+                  ),
+                  DecoratedTextField(
+                    labelText: "School",
+                    controller: schoolCon,
+                    keyboardType: TextInputType.name,
+                    prefixIcon: const Icon(Icons.school),
+                  ),
+                  DecoratedTextField(
+                    labelText: "Mother's name",
+                    controller: motherNameCon,
+                    keyboardType: TextInputType.name,
+                    prefixIcon: const Icon(Icons.person_3_sharp),
+                  ),
+                ]),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(

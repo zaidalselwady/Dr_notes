@@ -82,20 +82,6 @@ class _CustomPatientsListState extends State<CustomPatientsList> {
                             curve: Curves.fastLinearToSlowEaseIn,
                             flipAxis: FlipAxis.y,
                             child: PatientCard(
-                              //index: index,
-                              // onCancel: (patient) {
-                              //   setState(() {
-                              //     widget.patients.add(patient);
-                              //     widget.patients.sort((a, b) => a.patientId
-                              //         .compareTo(
-                              //             b.patientId)); // Maintain order
-                              //   });
-                              // },
-                              // onDelete: () {
-                              //   setState(() {
-                              //     widget.patients.removeAt(index);
-                              //   });
-                              // },
                               patientsInfo: widget.patients[index],
                             ),
                           ),

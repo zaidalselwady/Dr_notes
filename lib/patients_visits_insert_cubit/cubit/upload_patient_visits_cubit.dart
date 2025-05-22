@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:xml/xml.dart' as xml;
@@ -16,9 +18,8 @@ class UploadPatientVisitsCubit extends Cubit<UploadPatientVisitsState> {
     for (var element in procedureId) {
       response = await dataRepo.fetchWithSoapRequest("Insert_Update_cmd",
           "INSERT INTO Patients_Visits (Patient_Id,Procedure_id,Visit_Date,Procedure_Status,Notes) VALUES ($patientId , ${element['procedureId']} , '$visitDate1' , ${element['percentage']},'${element['notes']}')");
-      emit(UploadingPatientVisits());
+      if (procedureId.indexOf(element) == procedureId.length - 1) {}
     }
-
     response.fold((failure) {
       emit(UploadPatientVisitsFailed(error: failure.errorMsg));
     }, (inserted) async {
@@ -26,9 +27,15 @@ class UploadPatientVisitsCubit extends Cubit<UploadPatientVisitsState> {
       final resultElement =
           document.findAllElements('Insert_Update_cmdResult').first;
       final jsonString = resultElement.innerText;
-      emit(
-        UploadPatientVisitsSuccess(),
-      );
+      if (jsonString == "1") {
+        emit(
+          UploadPatientVisitsSuccess(),
+        );
+      } else {
+        emit(
+          UploadPatientVisitsFailed(error: "Failed"),
+        );
+      }
     });
   }
 }

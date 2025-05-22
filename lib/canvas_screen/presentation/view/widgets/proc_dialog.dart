@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hand_write_notes/core/failed_msg_screen_widget.dart';
 import '../../../../get_proc_cubit/cubit/get_proc_cubit.dart';
 import '../../../data/proc_model.dart';
 
@@ -250,13 +251,210 @@ class ProcedureTile extends StatelessWidget {
   }
 }
 
+class ProcedureSelectionScreen extends StatefulWidget {
+  const ProcedureSelectionScreen({super.key});
+
+  @override
+  _ProcedureSelectionScreenState createState() =>
+      _ProcedureSelectionScreenState();
+}
+
+class _ProcedureSelectionScreenState extends State<ProcedureSelectionScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  Map<String, List<Procedures>> categorizedProcedures =
+      {}; // Main Category -> Procedures
+  Map<int, int?> selectedPercentages = {};
+  Map<int, TextEditingController> notesControllers = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Select Procedures")),
+      body: BlocConsumer<GetProcCubit, GetProcState>(
+        listener: (context, state) {
+          if (state is GetProcSuccess) {
+            // Categorizing procedures
+            for (var proc in state.proc) {
+              categorizedProcedures
+                  .putIfAbsent(proc.mainProcedureDesc, () => [])
+                  .add(proc);
+
+              selectedPercentages[proc.procedureId] =
+                  proc.procStatus > 0 ? proc.procStatus : null;
+
+              notesControllers[proc.procedureId] =
+                  TextEditingController(text: proc.notes);
+            }
+
+            // Create tab controller after fetching data
+            _tabController = TabController(
+                length: categorizedProcedures.keys.length, vsync: this);
+
+            setState(() {});
+          }
+        },
+        builder: (context, state) {
+          if (state is GetProcSuccess && categorizedProcedures.isNotEmpty) {
+            return DefaultTabController(
+              length: categorizedProcedures.keys.length,
+              child: Column(
+                children: [
+                  TabBar(
+                    labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabs: categorizedProcedures.keys
+                        .map((category) => Tab(text: category))
+                        .toList(),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: categorizedProcedures.entries.map((entry) {
+                        return ListView.builder(
+                          itemCount: entry.value.length,
+                          itemBuilder: (context, index) {
+                            var procedure = entry.value[index];
+                            return ProcedureTile1(
+                              procedure: procedure.procedureDesc,
+                              onChanged: (percentage) {
+                                setState(() {
+                                  selectedPercentages[procedure.procedureId] =
+                                      percentage;
+                                });
+                              },
+                              onNoteChanged: (note) {
+                                notesControllers[procedure.procedureId]?.text =
+                                    note;
+                              },
+                              selectedPercentage:
+                                  selectedPercentages[procedure.procedureId],
+                              note:
+                                  notesControllers[procedure.procedureId]?.text,
+                            );
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else if (state is GetProcFailed) {
+            return WarningMsgScreen(
+                state: state, onRefresh: () async {}, msg: state.error);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          final List<Map<String, dynamic>> selectedProcedures = [];
+
+// Iterate through all categories
+          for (var entry in categorizedProcedures.entries) {
+            List<Procedures> procedures =
+                entry.value; // List of procedures in the category
+
+            for (int i = 0; i < procedures.length; i++) {
+              int procedureId = procedures[i].procedureId;
+              int? selectedPercentage =
+                  selectedPercentages[procedureId]; // Get selected percentage
+              String notes = notesControllers[procedureId]?.text ??
+                  ""; // Get notes (if any)
+
+              if (selectedPercentage != null) {
+                selectedProcedures.add({
+                  'id': procedures[i].id,
+                  'procedureId': procedureId,
+                  'percentage': selectedPercentage,
+                  'notes': notes
+                });
+              }
+            }
+          }
+
+          Navigator.of(context).pop(selectedProcedures);
+        },
+        child: const Icon(Icons.save),
+      ),
+    );
+  }
+}
+
+class ProcedureTile1 extends StatelessWidget {
+  final String procedure;
+  final ValueChanged<int?> onChanged;
+  final ValueChanged<String> onNoteChanged;
+  final int? selectedPercentage;
+  final String? note;
+
+  const ProcedureTile1({
+    super.key,
+    required this.procedure,
+    required this.onChanged,
+    required this.onNoteChanged,
+    this.selectedPercentage,
+    this.note,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(procedure,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var percent in [
+                  {1: 25},
+                  {2: 50},
+                  {3: 75},
+                  {4: 100}
+                ])
+                  ChoiceChip(
+                    label: Text("${percent.values.first}%"),
+                    selected: selectedPercentage == percent.keys.first,
+                    onSelected: (selected) {
+                      onChanged(selected ? percent.keys.first : null);
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              onChanged: onNoteChanged,
+              decoration: const InputDecoration(
+                labelText: "Notes",
+                border: OutlineInputBorder(),
+              ),
+              controller: TextEditingController(text: note),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 // class ProcedureTile extends StatelessWidget {
 //   final Procedures procedure;
 //   final List<DropdownMenuItem<int>> percentageOptions;
 //   final ValueChanged<int?> onChanged;
 //   final int? val;
-
 //   const ProcedureTile({
 //     super.key,
 //     required this.procedure,
@@ -264,7 +462,6 @@ class ProcedureTile extends StatelessWidget {
 //     required this.onChanged,
 //     this.val,
 //   });
-
 //   @override
 //   Widget build(BuildContext context) {
 //     return Padding(
@@ -290,7 +487,6 @@ class ProcedureTile extends StatelessWidget {
 //     );
 //   }
 // }
-
 // class ProceduresDialog extends StatefulWidget {
 //   @override
 //   _ProceduresDialogState createState() => _ProceduresDialogState();
@@ -403,4 +599,183 @@ class ProcedureTile extends StatelessWidget {
 //     );
 //   }
 // }
-
+// class ProcedureSelectionScreen extends StatefulWidget {
+//   const ProcedureSelectionScreen({Key? key}) : super(key: key);
+//   @override
+//   _ProcedureSelectionScreenState createState() =>
+//       _ProcedureSelectionScreenState();
+// }
+// class _ProcedureSelectionScreenState extends State<ProcedureSelectionScreen> {
+//    Map<String, List<Procedures>> categorizedProcedures={};
+//    Map<int, int?> selectedPercentages={};
+//    Map<int, TextEditingController> notesControllers={};
+//   List<DropdownMenuItem<int>> percentageOptions = [
+//     const DropdownMenuItem(value: 25, child: Text('25%')),
+//     const DropdownMenuItem(value: 50, child: Text('50%')),
+//     const DropdownMenuItem(value: 75, child: Text('75%')),
+//     const DropdownMenuItem(value: 100, child: Text('100%')),
+//   ];
+//   @override
+//   void initState() {
+//     super.initState();
+//   }
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: const Text("Select Procedures")),
+//       body: BlocConsumer<GetProcCubit, GetProcState>(
+//         listener: (context, state) {
+//           if (state is GetProcSuccess) {
+//    Map<String, List<Procedures>> categorizedProcedures={};
+//    Map<int, int?> selectedPercentages={};
+//    Map<int, TextEditingController> notesControllers={};
+//             for (var proc in state.proc) {
+//               categorizedProcedures
+//                   .putIfAbsent(proc.mainProcedureDesc, () => [])
+//                   .add(proc);
+//               selectedPercentages[proc.procedureId] =
+//                   proc.procStatus > 0 ? proc.procStatus : null;
+//               notesControllers[proc.procedureId] =
+//                   TextEditingController(text: proc.notes);
+//             }
+//           }
+//         },
+//         builder: (context, state) {
+//           return ListView(
+//             children: categorizedProcedures.entries.map((entry) {
+//               return ExpansionTile(
+//                 title: Text(entry.key,
+//                     style: const TextStyle(fontWeight: FontWeight.bold)),
+//                 children: entry.value.map((procedure) {
+//                   return _buildProcedureTile(procedure);
+//                 }).toList(),
+//               );
+//             }).toList(),
+//           );
+//         },
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         onPressed:(){}, //_saveProcedures,
+//         child: const Icon(Icons.save),
+//       ),
+//     );
+//   }
+//   Widget _buildProcedureTile(Procedures procedure) {
+//     return Card(
+//       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+//       child: Padding(
+//         padding: const EdgeInsets.all(8.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text(procedure.procedureDesc,
+//                 style: const TextStyle(fontWeight: FontWeight.bold)),
+//             Row(
+//               children: [
+//                 Expanded(
+//                   child: DropdownButton<int>(
+//                     value: selectedPercentages[procedure.procedureId],
+//                     hint: const Text('Select %'),
+//                     items: percentageOptions,
+//                     onChanged: (value) {
+//                       setState(() {
+//                         selectedPercentages[procedure.procedureId] = value;
+//                       });
+//                     },
+//                   ),
+//                 ),
+//               ],
+//             ),
+//             TextField(
+//               controller: notesControllers[procedure.procedureId],
+//               decoration: const InputDecoration(
+//                   labelText: 'Notes', border: OutlineInputBorder()),
+//               maxLines: 2,
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//   // void _saveProcedures() {
+//   //   List<Procedures> selectedProcedures = [];
+//   //   selectedPercentages.forEach((procId, percentage) {
+//   //     if (percentage != null) {
+//   //       selectedProcedures.add(Procedures(
+//   //         id: 0,
+//   //         procedureId: procId,
+//   //         procIdPv: 0,
+//   //         patientId: 0,
+//   //         procedureDesc: widget.allProcedures
+//   //             .firstWhere((p) => p.procedureId == procId)
+//   //             .procedureDesc,
+//   //         mainProcedureDesc: widget.allProcedures
+//   //             .firstWhere((p) => p.procedureId == procId)
+//   //             .mainProcedureDesc,
+//   //         mainProcedureId: widget.allProcedures
+//   //             .firstWhere((p) => p.procedureId == procId)
+//   //             .mainProcedureId,
+//   //         procStatus: percentage,
+//   //         visitDate: "", // Add actual visit date
+//   //         notes: notesControllers[procId]?.text ?? "",
+//   //       ));
+//   //     }
+//   //   });
+//   //   Navigator.pop(context, selectedProcedures);
+//   // }
+// }
+// class ProcedureTile1 extends StatelessWidget {
+//   final String procedure;
+//   final ValueChanged<int?> onChanged;
+//   final ValueChanged<String> onNoteChanged;
+//   final int? selectedPercentage;
+//   final String? note;
+//  ProcedureTile1({
+//     required this.procedure,
+//     required this.onChanged,
+//     required this.onNoteChanged,
+//     this.selectedPercentage,
+//     this.note,
+//   });
+//   @override
+//   Widget build(BuildContext context) {
+//     return Card(
+//       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+//       child: Padding(
+//         padding: const EdgeInsets.all(8.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text(procedure,
+//                 style: const TextStyle(fontWeight: FontWeight.bold)),
+//             const SizedBox(height: 10),
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//               children: [
+//                 for (var percent in [25, 50, 75, 100])
+//                   ChoiceChip(
+//                     label: Text("$percent%"),
+//                     selected: selectedPercentage == percent,
+//                     onSelected: (selected) {
+//                       if (selected) {
+//                         onChanged(percent);
+//                       }
+//                     },
+//                   ),
+//               ],
+//             ),
+//             const SizedBox(height: 10),
+//             TextField(
+//               onChanged: onNoteChanged,
+//               decoration: const InputDecoration(
+//                 labelText: "Notes",
+//                 border: OutlineInputBorder(),
+//               ),
+//               controller: TextEditingController(text: note),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }

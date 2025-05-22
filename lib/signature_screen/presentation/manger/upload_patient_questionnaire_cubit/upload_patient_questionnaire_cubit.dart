@@ -15,8 +15,12 @@ class UploadPatientQuestionnaireCubit
       List<QuestionnaireModel> questionnaireAnswers, int patientId) async {
     emit(UploadingPatientQuestionnaire());
     // Convert answers to bit representation
-    List<int> bitAnswers = questionnaireAnswers.map((q) {
-      return q.answer == true ? 1 : 0;
+    List<int?> bitAnswers = questionnaireAnswers.map((q) {
+      q.answer == null
+          ? null
+          : q.answer!
+              ? 1
+              : 0;
     }).toList();
     // Convert list to a comma-separated string
     String bitValues = bitAnswers.join(",");
@@ -31,7 +35,7 @@ class UploadPatientQuestionnaireCubit
       final resultElement =
           document.findAllElements('Insert_Update_cmdResult').first;
       final jsonString = resultElement.innerText;
-      emit(UploadPatientQuestionnaireSuccess(patientId:patientId));
+      emit(UploadPatientQuestionnaireSuccess(patientId: patientId));
     });
   }
 }

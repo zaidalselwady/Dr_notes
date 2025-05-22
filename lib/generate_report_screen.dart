@@ -26,12 +26,20 @@ class _ReportingScreenState extends State<ReportingScreen> {
   List<int> selectedProcedures = [];
   List<int> selectedProcedureStatuses = [];
   List<int> selectedFields = [];
-  Map<int, String> proceduresMap = {};
+  Map<int, Map<String, dynamic>> proceduresMap = {};
   Map<int, Map> fieldsMap = {};
   String sqlStr = "";
   List<String?> fieldGroupList = [];
   List<String> procedures = [];
   List<FieldInfo> fields = [];
+
+  int? selectedMainProcedureId;
+  Map<int, String> mainProcedures =
+      {}; // Stores mainProcedureId -> mainProcedureDesc
+  Map<int, List<Map<String, dynamic>>> categorizedProcedures =
+      {}; // Stores sub-procedures per mainProcId
+  List<int> selectedMainProcedures = [];
+  List<int> selectedSubProcedures = [];
   final Map<int, String> procedureStatuses = {
     1: "25%",
     2: "50%",
@@ -159,6 +167,20 @@ class _ReportingScreenState extends State<ReportingScreen> {
     String sqlStr = baseQuery;
     List<String> conditions = [];
 
+    // ✅ Handle Procedures condition
+    if ((criteria['Procedures'] as List?)?.isNotEmpty ?? false) {
+      String procedures =
+          (criteria['Procedures'] as List).map((p) => "$p").join(", ");
+      conditions.add("Procedure_id IN ($procedures)");
+    }
+
+    if ((criteria['Main Procedures'] as List?)?.isNotEmpty ?? false) {
+      String procedures =
+          (criteria['Main Procedures'] as List).map((p) => "$p").join(", ");
+      conditions.add(
+          "Procedure_id IN (SELECT Procedure_id FROM Patients_Procedures WHERE Main_Procedure_id IN ($procedures))");
+    }
+
     // ✅ Handle Visit Date conditions properly
     if (criteria['Visit Date From']?.isNotEmpty ?? false) {
       if (criteria['Visit Date To']?.isEmpty ?? false) {
@@ -181,18 +203,10 @@ class _ReportingScreenState extends State<ReportingScreen> {
       conditions.add("birthDate LIKE '${criteria['Birth Date']}'");
     }
 
-    // ✅ Handle Procedures condition
-    if ((criteria['Procedures'] as List?)?.isNotEmpty ?? false) {
-      String procedures =
-          (criteria['Procedures'] as List).map((p) => "'$p'").join(", ");
-      conditions.add("Procedure_id IN ($procedures)");
-    }
-
     // ✅ Handle Procedure Statuses condition
     if ((criteria['Procedure Statuses'] as List?)?.isNotEmpty ?? false) {
-      String statuses = (criteria['Procedure Statuses'] as List)
-          .map((s) => "'$s'")
-          .join(", ");
+      String statuses =
+          (criteria['Procedure Statuses'] as List).map((s) => "$s").join(", ");
       conditions.add("Procedure_Status IN ($statuses)");
     }
 
@@ -202,8 +216,30 @@ class _ReportingScreenState extends State<ReportingScreen> {
     }
 
     // ✅ Append conditions if any exist
+    // if (conditions.isNotEmpty) {
+    //   sqlStr += " WHERE ${conditions.join(" AND ")}";
+    // }
     if (conditions.isNotEmpty) {
-      sqlStr += " WHERE ${conditions.join(" AND ")}";
+      List<String> procConditions = [];
+      List<String> otherConditions = [];
+
+      for (var condition in conditions) {
+        if (condition.startsWith("Procedure_id")) {
+          procConditions.add(condition);
+        } else {
+          otherConditions.add(condition);
+        }
+      }
+
+      if (procConditions.isNotEmpty) {
+        sqlStr += " WHERE (${procConditions.join(" OR ")})";
+      }
+
+      if (otherConditions.isNotEmpty) {
+        sqlStr += procConditions.isNotEmpty
+            ? " AND ${otherConditions.join(" AND ")}"
+            : " WHERE ${otherConditions.join(" AND ")}";
+      }
     }
 
     // ✅ Append GROUP BY if any fields exist
@@ -212,6 +248,31 @@ class _ReportingScreenState extends State<ReportingScreen> {
     }
 
     return sqlStr;
+  }
+
+  bool doesSubBelongToMain(int subProcedureId) {
+    return selectedMainProcedures.any((mainProc) =>
+        categorizedProcedures[mainProc]
+            ?.any((proc) => proc['procId'] == subProcedureId) ??
+        false);
+  }
+
+  void removeMainIfSubBelongs() {
+    for (var i = 0; i < selectedSubProcedures.length; i++) {
+      selectedMainProcedures.removeWhere((mainProc) =>
+          categorizedProcedures[mainProc]
+              ?.any((proc) => proc['procId'] == selectedSubProcedures[i]) ??
+          false);
+    }
+  }
+
+  int countSelectedProcedures(int mainProcedureId) {
+    if (!categorizedProcedures.containsKey(mainProcedureId)) {
+      return 0;
+    }
+    return categorizedProcedures[mainProcedureId]!
+        .where((proc) => selectedSubProcedures.contains(proc['procId']))
+        .length;
   }
 
   String buildBaseSelectStatement(List<FieldInfo> fields) {
@@ -347,13 +408,11 @@ class _ReportingScreenState extends State<ReportingScreen> {
                     firstDate: DateTime(1900),
                     lastDate: DateTime(2100),
                   );
-                  if (pickedDate != null) {
-                    setState(() {
-                      birthDateController.text =
-                          pickedDate.toIso8601String().split('T').first;
-                    });
-                  }
-                },
+                  setState(() {
+                    birthDateController.text =
+                        pickedDate!.toIso8601String().split('T').first;
+                  });
+                                },
                 child: IgnorePointer(
                   child: TextFormField(
                     controller: birthDateController,
@@ -377,28 +436,26 @@ class _ReportingScreenState extends State<ReportingScreen> {
                           firstDate: DateTime(1900),
                           lastDate: DateTime(2100),
                         );
-                        if (pickedDate != null) {
-                          setState(() {
-                            visitDateFromController.text =
-                                pickedDate.toIso8601String().split('T').first;
+                        setState(() {
+                          visitDateFromController.text =
+                              pickedDate!.toIso8601String().split('T').first;
 
-                            // Validate date range
-                            if (visitDateToController.text.isNotEmpty) {
-                              DateTime visitDateTo =
-                                  DateTime.parse(visitDateToController.text);
-                              if (pickedDate.isAfter(visitDateTo)) {
-                                visitDateFromController.clear();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        "Visit Date From cannot be after Visit Date To."),
-                                  ),
-                                );
-                              }
+                          // Validate date range
+                          if (visitDateToController.text.isNotEmpty) {
+                            DateTime visitDateTo =
+                                DateTime.parse(visitDateToController.text);
+                            if (pickedDate.isAfter(visitDateTo)) {
+                              visitDateFromController.clear();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "Visit Date From cannot be after Visit Date To."),
+                                ),
+                              );
                             }
-                          });
-                        }
-                      },
+                          }
+                        });
+                                            },
                       child: IgnorePointer(
                         child: TextFormField(
                           controller: visitDateFromController,
@@ -421,28 +478,26 @@ class _ReportingScreenState extends State<ReportingScreen> {
                           firstDate: DateTime(1900),
                           lastDate: DateTime(2100),
                         );
-                        if (pickedDate != null) {
-                          setState(() {
-                            visitDateToController.text =
-                                pickedDate.toIso8601String().split('T').first;
+                        setState(() {
+                          visitDateToController.text =
+                              pickedDate!.toIso8601String().split('T').first;
 
-                            // Validate date range
-                            if (visitDateFromController.text.isNotEmpty) {
-                              DateTime visitDateFrom =
-                                  DateTime.parse(visitDateFromController.text);
-                              if (visitDateFrom.isAfter(pickedDate)) {
-                                visitDateToController.clear();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        "Visit Date To cannot be before Visit Date From."),
-                                  ),
-                                );
-                              }
+                          // Validate date range
+                          if (visitDateFromController.text.isNotEmpty) {
+                            DateTime visitDateFrom =
+                                DateTime.parse(visitDateFromController.text);
+                            if (visitDateFrom.isAfter(pickedDate)) {
+                              visitDateToController.clear();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "Visit Date To cannot be before Visit Date From."),
+                                ),
+                              );
                             }
-                          });
-                        }
-                      },
+                          }
+                        });
+                                            },
                       child: IgnorePointer(
                         child: TextFormField(
                           controller: visitDateToController,
@@ -461,25 +516,95 @@ class _ReportingScreenState extends State<ReportingScreen> {
               BlocConsumer<GetProcCubit, GetProcState>(
                 listener: (context, state) {
                   if (state is GetProcSuccess) {
-                    proceduresMap = {
-                      for (var proc in state.proc)
-                        proc.procedureId: proc.procedureDesc,
-                    };
+                    // proceduresMap = {
+                    //   for (var proc in state.proc)
+                    //     proc.mainProcedureId: {
+                    //       'procId': proc.procedureId,
+                    //       'procedureDesc': proc.procedureDesc,
+                    //     },
+                    // };
+
+                    for (var proc in state.proc) {
+                      mainProcedures[proc.mainProcedureId] =
+                          proc.mainProcedureDesc;
+
+                      categorizedProcedures
+                          .putIfAbsent(proc.mainProcedureId, () => [])
+                          .add({
+                        'procId': proc.procedureId,
+                        'procedureDesc': proc.procedureDesc,
+                      });
+                    }
+
                     // procedures =
                     //     state.proc.map((proc) => proc.procedureDesc).toList();
                   }
                 },
                 builder: (context, state) {
                   if (state is GetProcSuccess) {
-                    return MultiSelectChip(
-                      title: "Procedures",
-                      options: proceduresMap,
-                      selectedItems: selectedProcedures,
-                      onSelectionChanged: (selected) {
-                        setState(() {
-                          selectedProcedures = selected;
-                        });
-                      },
+                    return Column(
+                      children: [
+                        const Text("Select a Main Procedure:",
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        Wrap(
+                          spacing: 8,
+                          children: mainProcedures.entries.map((entry) {
+                            return ChoiceChip(
+                              label: Text(
+                                  "${entry.value} (${countSelectedProcedures(entry.key)})"),
+                              selected:
+                                  selectedMainProcedures.contains(entry.key),
+                              onSelected: (selected) {
+                                setState(() {
+                                  selectedMainProcedureId =
+                                      selected ? entry.key : null;
+                                  if (selected) {
+                                    selectedMainProcedures.add(entry.key);
+                                  } else {
+                                    selectedMainProcedures.remove(entry.key);
+                                  }
+                                  if (!selectedMainProcedures
+                                          .contains(selectedMainProcedureId) &&
+                                      selectedMainProcedureId != null) {
+                                    selectedMainProcedures
+                                        .add(selectedMainProcedureId!);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                        if (selectedMainProcedureId != null) ...[
+                          const Text("Select a Procedure:",
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          Wrap(
+                            spacing: 8,
+                            children:
+                                categorizedProcedures[selectedMainProcedureId]!
+                                    .map((proc) {
+                              return ChoiceChip(
+                                label: Text(proc['procedureDesc']),
+                                selected: selectedSubProcedures
+                                    .contains(proc['procId']),
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      selectedSubProcedures.add(proc['procId']);
+                                      //selectedProcedures.add(proc['procId']);
+                                    } else {
+                                      selectedSubProcedures
+                                          .remove(proc['procId']);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
                     );
                   } else if (state is GetProcFailed) {
                     return const Text("Failed to load procedures");
@@ -513,14 +638,12 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 children: [
                   CustomElevatedButton(
                     onPressed: () {
-                      // Validate visit date range
                       if (visitDateFromController.text.isNotEmpty &&
                           visitDateToController.text.isNotEmpty) {
                         DateTime visitDateFrom =
                             DateTime.parse(visitDateFromController.text);
                         DateTime visitDateTo =
                             DateTime.parse(visitDateToController.text);
-
                         if (visitDateFrom.isAfter(visitDateTo)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -537,10 +660,13 @@ class _ReportingScreenState extends State<ReportingScreen> {
                         "Birth Date": birthDateController.text,
                         "Visit Date From": visitDateFromController.text,
                         "Visit Date To": visitDateToController.text,
-                        "Procedures": selectedProcedures,
+                        "Procedures": selectedSubProcedures,
+                        "Main Procedures": selectedMainProcedures,
                         "Procedure Statuses": selectedProcedureStatuses,
                         "Notes": notesController.text,
                       };
+
+                      removeMainIfSubBelongs();
 
                       sqlStr = buildBaseSelectStatement2(
                           fields, fieldsMap, selectedFields);
@@ -571,7 +697,8 @@ class _ReportingScreenState extends State<ReportingScreen> {
                         birthDateController.clear();
                         visitDateFromController.clear();
                         visitDateToController.clear();
-                        selectedProcedures.clear();
+                        selectedSubProcedures.clear();
+                        selectedMainProcedures.clear();
                         selectedProcedureStatuses.clear();
                         notesController.clear();
                       });

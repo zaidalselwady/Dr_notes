@@ -207,28 +207,141 @@ class GetFilesCubit extends Cubit<GetFilesState> {
     });
   }
 
-  Future<List<ImageModel>> getImages3(String folderName) async {
+  // Future<void> getImages3(String folderName) async {
+  //   if (isClosed) return;
+  //   debugPrint("Started ${DateTime.now()}");
+  //   emit(GettingFiles());
+
+  //   final DefaultCacheManager cacheManager = DefaultCacheManager();
+  //   final String cacheKey = "patient_$folderName";
+
+  //   // ✅ Step 1: Check if images exist in cache
+  //   FileInfo? cachedFileInfo = await cacheManager.getFileFromCache(cacheKey);
+  //   List<ImageModel> cachedImages = [];
+
+  //   if (cachedFileInfo != null) {
+  //     try {
+  //       // Load images from cache
+  //       cachedImages = await _loadImagesFromCache(cachedFileInfo.file);
+  //       emit(GetFilesSuccess(images: cachedImages));
+  //     } catch (e) {
+  //       emit(GetFilesFaild(error: "Failed to load cached images: $e"));
+  //     }
+  //   }
+
+  //   // ✅ Step 2: Fetch images from the API
+  //   var result = await dataRepo.soapRequest(
+  //     sqlStr: "",
+  //     action: "IO_get_Images",
+  //     newName: "",
+  //     currentFolder: folderName,
+  //     filePath: "",
+  //     imageBytes: "",
+  //   );
+
+  //   return result.fold((failure) {
+  //     emit(GetFilesFaild(error: failure.errorMsg));
+  //   }, (dMaster) async {
+  //     final document = xml.XmlDocument.parse(dMaster.body);
+  //     if (document.findAllElements('IO_get_ImagesResult').isNotEmpty) {
+  //       final resultElement =
+  //           document.findAllElements('IO_get_ImagesResult').first;
+  //       final jsonString = resultElement.innerText;
+
+  //       try {
+  //         // Parse the new images
+  //         List<ImageModel> newImages = _parseBase64Images(jsonString);
+
+  //         // ✅ Step 3: Merge the new images with cached images (only add new ones)
+  //         List<ImageModel> allImages = List.from(cachedImages);
+
+  //         // Create a Set of image base64 bytes to check duplicates
+  //         Set<String> existingImageHashes =
+  //             cachedImages.map((img) => _hashImage(img.imgBase64)).toSet();
+
+  //         for (var newImage in newImages) {
+  //           String newImageHash = _hashImage(newImage.imgBase64);
+
+  //           // Add the new image only if it's not already in the cache
+  //           if (!existingImageHashes.contains(newImageHash)) {
+  //             allImages.add(
+  //                 newImage); // Add the new image if it's not already in the list
+  //             existingImageHashes
+  //                 .add(newImageHash); // Add to the set of existing hashes
+  //             debugPrint("Added new image: ${DateTime.now()}");
+  //           }
+  //         }
+
+  //         // ✅ Step 4: Update the cache with the new set of images
+  //         await _cacheImages(allImages, cacheManager, cacheKey);
+
+  //         emit(GetFilesSuccess(images: allImages));
+  //       } catch (e) {
+  //         emit(GetFilesFaild(error: "Error processing images: $e"));
+  //       }
+  //     } else {
+  //       emit(GetFilesSuccess(images: const []));
+  //     }
+  //   });
+  // }
+
+  Future<void> getImages3(String folderName) async {
+    if (isClosed) return;
     debugPrint("Started ${DateTime.now()}");
     emit(GettingFiles());
 
     final DefaultCacheManager cacheManager = DefaultCacheManager();
     final String cacheKey = "patient_$folderName";
 
-    // ✅ Step 1: Check if images exist in cache
-    FileInfo? cachedFileInfo = await cacheManager.getFileFromCache(cacheKey);
-    List<ImageModel> cachedImages = [];
+    // ✅ Fetch from cache and API in parallel
+    final results = await Future.wait([
+      _getCachedImages(cacheManager, cacheKey), // Fetch from cache
+      _fetchImagesFromAPI(folderName), // Fetch from API
+    ]);
 
-    if (cachedFileInfo != null) {
-      try {
-        // Load images from cache
-        cachedImages = await _loadImagesFromCache(cachedFileInfo.file);
-        emit(GetFilesSuccess(images: cachedImages));
-      } catch (e) {
-        emit(GetFilesFaild(error: "Failed to load cached images: $e"));
+    // ✅ Step 1: Get cached images
+    List<ImageModel> cachedImages = results[0];
+    if (cachedImages.isNotEmpty) {
+      emit(GetFilesSuccess(images: cachedImages));
+    }
+
+    // ✅ Step 2: Get new images from API
+    List<ImageModel> newImages = results[1];
+
+    // ✅ Step 3: Merge cache and API results
+    Set<String> existingImageHashes =
+        cachedImages.map((img) => _hashImage(img.imgBase64)).toSet();
+    List<ImageModel> allImages = List.from(cachedImages);
+
+    for (var newImage in newImages) {
+      String newImageHash = _hashImage(newImage.imgBase64);
+      if (!existingImageHashes.contains(newImageHash)) {
+        allImages.add(newImage);
+        existingImageHashes.add(newImageHash);
       }
     }
 
-    // ✅ Step 2: Fetch images from the API
+    // ✅ Step 4: Update cache with the final merged images
+    await _cacheImages(allImages, cacheManager, cacheKey);
+
+    // ✅ Emit the final images list
+    emit(GetFilesSuccess(images: allImages));
+  }
+
+  Future<List<ImageModel>> _getCachedImages(
+      DefaultCacheManager cacheManager, String cacheKey) async {
+    try {
+      FileInfo? cachedFileInfo = await cacheManager.getFileFromCache(cacheKey);
+      if (cachedFileInfo != null) {
+        return _loadImagesFromCache(cachedFileInfo.file);
+      }
+    } catch (e) {
+      debugPrint("Failed to load cached images: $e");
+    }
+    return [];
+  }
+
+  Future<List<ImageModel>> _fetchImagesFromAPI(String folderName) async {
     var result = await dataRepo.soapRequest(
       sqlStr: "",
       action: "IO_get_Images",
@@ -238,54 +351,21 @@ class GetFilesCubit extends Cubit<GetFilesState> {
       imageBytes: "",
     );
 
-    return result.fold((failure) {
-      emit(GetFilesFaild(error: failure.errorMsg));
-      return [];
-    }, (dMaster) async {
-      final document = xml.XmlDocument.parse(dMaster.body);
-      if (document.findAllElements('IO_get_ImagesResult').isNotEmpty) {
-        final resultElement =
-            document.findAllElements('IO_get_ImagesResult').first;
-        final jsonString = resultElement.innerText;
-
-        try {
-          // Parse the new images
-          List<ImageModel> newImages = _parseBase64Images(jsonString);
-
-          // ✅ Step 3: Merge the new images with cached images (only add new ones)
-          List<ImageModel> allImages = List.from(cachedImages);
-
-          // Create a Set of image base64 bytes to check duplicates
-          Set<String> existingImageHashes =
-              cachedImages.map((img) => _hashImage(img.imgBase64)).toSet();
-
-          for (var newImage in newImages) {
-            String newImageHash = _hashImage(newImage.imgBase64);
-
-            // Add the new image only if it's not already in the cache
-            if (!existingImageHashes.contains(newImageHash)) {
-              allImages.add(
-                  newImage); // Add the new image if it's not already in the list
-              existingImageHashes
-                  .add(newImageHash); // Add to the set of existing hashes
-              debugPrint("Added new image: ${DateTime.now()}");
-            }
-          }
-
-          // ✅ Step 4: Update the cache with the new set of images
-          await _cacheImages(allImages, cacheManager, cacheKey);
-
-          emit(GetFilesSuccess(images: allImages));
-          return allImages;
-        } catch (e) {
-          emit(GetFilesFaild(error: "Error processing images: $e"));
-          return [];
-        }
-      } else {
-        emit(GetFilesSuccess(images: const []));
+    return result.fold(
+      (failure) {
+        debugPrint("API Fetch Failed: ${failure.errorMsg}");
         return [];
-      }
-    });
+      },
+      (dMaster) async {
+        final document = xml.XmlDocument.parse(dMaster.body);
+        if (document.findAllElements('IO_get_ImagesResult').isNotEmpty) {
+          final resultElement =
+              document.findAllElements('IO_get_ImagesResult').first;
+          return _parseBase64Images(resultElement.innerText);
+        }
+        return [];
+      },
+    );
   }
 
 // ✅ Function to hash image base64 for duplicate check

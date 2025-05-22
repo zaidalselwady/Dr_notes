@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hand_write_notes/dashboard_screen/presentation/view/dashboardScreen.dart';
 import 'package:hand_write_notes/delete_patient_cubit/cubit/delete_patient_cubit.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/cubit/login_cubit.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/save_user_locally_cubit/cubit/save_user_locally_cubit.dart';
@@ -16,10 +17,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hand_write_notes/core/repos/data_repo_impl.dart';
 import 'package:hand_write_notes/core/utils/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'convert_canvas_B64_cubit/cubit/convert_canvas_b64_cubit.dart';
 import 'create_folder_cubit/cubit/create_folder_cubit.dart';
 import 'login_screen/data/user_model.dart';
+import 'patients_screen/presentation/manger/get_patients_cubit/cubit/get_patients_cubit.dart';
 import 'patients_screen/presentation/view/all_patients_screen.dart';
 
 class SimpleBlocObserver extends BlocObserver {
@@ -65,10 +66,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     try {
       final cacheManager = DefaultCacheManager();
       await cacheManager.emptyCache(); // This clears all cached files
-      print('Cache cleared');
-    } catch (e) {
-      print('Failed to clear cache: $e');
-    }
+    } catch (e) {}
   }
 
   @override
@@ -98,6 +96,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         BlocProvider(
           create: (context) => ConvertSignatureToImgCubit(),
+        ),
+        BlocProvider(
+          create: (context) => UploadPatientInfoCubit(
+            DataRepoImpl(
+              ApiService(
+                Dio(),
+              ),
+            ),
+          ),
         ),
         BlocProvider(
           create: (context) => UploadPatientInfoCubit(
@@ -154,6 +161,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ),
         ),
         BlocProvider(
+            create: (context) => GetPatientsCubit(
+                  DataRepoImpl(
+                    ApiService(
+                      Dio(),
+                    ),
+                  ),
+                )),
+        BlocProvider(
           create: (context) => SaveUserLocallyCubit(),
         ),
       ],
@@ -162,17 +177,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           debugShowCheckedModeBanner: false,
           title: 'Dr Notes',
           theme: ThemeData(
+            
             appBarTheme: AppBarTheme(
+              backgroundColor:  Colors.transparent,
               iconTheme: IconThemeData(
                 color: Colors.teal[800], // Change color
                 size: 28, // Change size
               ),
-              backgroundColor: const Color(
-                0xffdaedec,
-              ),
+              
             ),
-            textTheme: GoogleFonts.lilitaOneTextTheme(),
-            scaffoldBackgroundColor: const Color(0xffdaedec),
+            textTheme: GoogleFonts.robotoTextTheme(),
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(
                 0xffdaedec,
@@ -180,8 +194,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ),
             useMaterial3: true,
           ),
-          home: 
-          FutureBuilder<User?>(
+          home: FutureBuilder<User?>(
             future: BlocProvider.of<SaveUserLocallyCubit>(context).getUser(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -199,6 +212,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 }
 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.user});
   final String user;
@@ -207,33 +221,59 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
   double _opacity = 0.0;
 
   @override
   void initState() {
     super.initState();
-    // Trigger the animation
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    _scaleAnimation =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+
     Future.delayed(const Duration(milliseconds: 500), () {
       setState(() {
         _opacity = 1.0;
       });
+      _controller.forward();
     });
 
-    // Navigate to Home Screen after 3 seconds
-    if (widget.user == "Dr") {
-      Future.delayed(const Duration(seconds: 3), () {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const PatientsInClinic()),
-        );
-      });
-    } else {
-      Future.delayed(const Duration(seconds: 3), () {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AllPatientsScreen()),
-        );
-      });
-    }
+    Future.delayed(const Duration(seconds: 4), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (context) => UpdatePatientStateCubit(
+                  DataRepoImpl(ApiService(Dio())),
+                ),
+              ),
+              BlocProvider(
+                create: (context) => GetPatientsCubit(
+                  DataRepoImpl(ApiService(Dio())),
+                )..fetchPatientsWithSoapRequest(
+                    "SELECT * FROM Patients_Info WHERE Status = 0"),
+              ),
+            ],
+            child: const DashboardScreen(),
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -241,37 +281,51 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background
+          // Background with wave or gradient
           Container(
             decoration: const BoxDecoration(
-              image: DecorationImage(
-                image:
-                    AssetImage('assets/background.png'), // Add your image here
-                fit: BoxFit.cover,
+              gradient: LinearGradient(
+                colors: [
+                 Color(0xFFE0F7FA), Color(0xFFB2EBF2)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
           ),
-          // Logo Animation
+
+          // Logo animation with scale and fade
           Center(
             child: AnimatedOpacity(
               opacity: _opacity,
               duration: const Duration(seconds: 2),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset('assets/app_icon.png'),
-                  // const Icon(Icons.local_hospital,
-                  //     size: 100, color: Colors.white), // Replace with your logo
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Dental App',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset('assets/logo.png', height: 160),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'DrRecords',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF040A17),
+                        fontFamily: 'HelveticaNeue',
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Smart Dental Record System',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF55575B),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -280,3 +334,128 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// class SplashScreen extends StatefulWidget {
+//   const SplashScreen({super.key, required this.user});
+//   final String user;
+
+//   @override
+//   State<SplashScreen> createState() => _SplashScreenState();
+// }
+
+// class _SplashScreenState extends State<SplashScreen> {
+//   double _opacity = 0.0;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Trigger the animation
+//     Future.delayed(const Duration(milliseconds: 500), () {
+//       setState(() {
+//         _opacity = 1.0;
+//       });
+//     });
+//     Future.delayed(const Duration(seconds: 3), () {
+//       Navigator.of(context).pushReplacement(
+//         MaterialPageRoute(
+//             builder: (context) => MultiBlocProvider(providers: [
+//                   BlocProvider(
+//                     create: (context) => UpdatePatientStateCubit(
+//                       DataRepoImpl(
+//                         ApiService(
+//                           Dio(),
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   BlocProvider(
+//                     create: (context) => GetPatientsCubit(
+//                       DataRepoImpl(
+//                         ApiService(
+//                           Dio(),
+//                         ),
+//                       ),
+//                     )..fetchPatientsWithSoapRequest(
+//                         "SELECT * FROM Patients_Info WHERE Status = 0"),
+//                   )
+//                 ], child: const DashboardScreen())),
+//       );
+//     });
+
+//     // Navigate to Home Screen after 3 seconds
+//     // if (widget.user == "Dr") {
+//     //   Future.delayed(const Duration(seconds: 3), () {
+//     //     Navigator.of(context).pushReplacement(
+//     //       MaterialPageRoute(builder: (context) => const PatientsInClinic()),
+//     //     );
+//     //   });
+//     // } else {
+//     //   Future.delayed(const Duration(seconds: 3), () {
+//     //     Navigator.of(context).pushReplacement(
+//     //       MaterialPageRoute(builder: (context) => const AllPatientsScreen()),
+//     //     );
+//     //   });
+//     // }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: Stack(
+//         children: [
+//           // Background
+//           AnimatedContainer(
+//             duration: const Duration(seconds: 5),
+//             decoration: BoxDecoration(
+//               gradient: LinearGradient(
+//                 begin: Alignment.topLeft,
+//                 end: Alignment.bottomRight,
+//                 colors: [
+//                   Color(0xFF5985D8),
+//                   Color(0xFFC7D7F5),
+//                 ],
+//               ),
+//             ),
+//           ),
+//           // Logo Animation
+//           Center(
+//             child: AnimatedOpacity(
+//               opacity: _opacity,
+//               duration: const Duration(seconds: 2),
+//               child: Column(
+//                 mainAxisAlignment: MainAxisAlignment.center,
+//                 children: [
+//                   Image.asset('assets/logo.png', height: 200),
+//                   // const Icon(Icons.local_hospital,
+//                   //     size: 100, color: Colors.white), // Replace with your logo
+//                   const SizedBox(height: 20),
+//                   const Text(
+//                     'Dental App',
+//                     style: TextStyle(
+//                       fontSize: 24,
+//                       fontWeight: FontWeight.bold,
+//                       color: Colors.black,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hand_write_notes/dashboard_screen/presentation/view/dashboardScreen.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/save_user_locally_cubit/cubit/save_user_locally_cubit.dart';
-import 'package:hand_write_notes/patients_screen/presentation/view/all_patients_screen.dart';
-import 'package:hand_write_notes/patients_screen/presentation/view/patients_in_clinic_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../manger/cubit/login_cubit.dart';
 import 'widgets/text_field_widget.dart';
@@ -55,21 +53,28 @@ class _LoginScreenState extends State<LoginScreen> {
                 BlocListener<SaveUserLocallyCubit, SaveUserLocallyState>(
                   listener: (context, state) {
                     if (state is SaveUserLocallySuccess) {
-                      if (state.user.userName == "Dr") {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const PatientsInClinic()),
-                          (route) => false, // Remove all routes
-                        );
-                      } else {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const AllPatientsScreen()),
-                          (route) => false, // Remove all routes
-                        );
-                      }
+                      
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const DashboardScreen()),
+                        (route) => false, // Remove all routes
+                      );
+                      // if (state.user.userName == "Dr") {
+                      //   Navigator.pushAndRemoveUntil(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //         builder: (context) => const PatientsInClinic()),
+                      //     (route) => false, // Remove all routes
+                      //   );
+                      // } else {
+                      //   Navigator.pushAndRemoveUntil(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //         builder: (context) => const AllPatientsScreen()),
+                      //     (route) => false, // Remove all routes
+                      //   );
+                      // }
                     } else if (state is SaveUserLocallyFailed) {
                       ScaffoldMessenger.of(context)
                           .showSnackBar(SnackBar(content: Text(state.error)));

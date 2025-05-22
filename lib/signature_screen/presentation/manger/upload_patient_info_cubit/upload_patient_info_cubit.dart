@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:hand_write_notes/information_screen/data/child_info_model.dart';
 import 'package:meta/meta.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../../../core/repos/data_repo.dart';
 import 'package:xml/xml.dart' as xml;
 part 'upload_patient_info_state.dart';

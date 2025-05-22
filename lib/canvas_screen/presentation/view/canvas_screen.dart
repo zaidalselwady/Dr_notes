@@ -13,6 +13,7 @@ import 'package:hand_write_notes/upload_files_cubit/cubit/upload_files_cubit.dar
 import 'package:image_picker/image_picker.dart';
 import '../../../convert_canvas_B64_cubit/cubit/convert_canvas_b64_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../main.dart';
 import 'widgets/hand_writing_painter.dart';
 import 'widgets/pen_eraser.dart';
 import 'package:intl/intl.dart';
@@ -227,14 +228,14 @@ class _HandwritingScreenState extends State<HandwritingScreen> {
                         ),
                       ),
                     )..fetchPatientsWithSoapRequest(
-                        "Select * FROM Patients_Procedures"),
-                    child: const ProceduresDialog(),
+                        "SELECT mp.Main_Procedure_id,mp.Main_Procedure_Desc,pp.Procedure_Desc,pp.Procedure_id FROM Patients_Main_Procedures mp INNER JOIN Patients_Procedures pp ON mp.Main_Procedure_id = pp.Main_Procedure_id"),
+                    child:   const ProcedureSelectionScreen(),
                   ); // Your dialog
                 },
               );
-              if (context.mounted && selectedProcedures != null) {
+              if (context.mounted) {
                 convertCubit.convertCanvasToB64(context, _paths, _currentPath,
-                    _isErasing, selectedProcedures ?? []);
+                    _isErasing, selectedProcedures!);
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(

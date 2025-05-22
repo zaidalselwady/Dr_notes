@@ -104,7 +104,6 @@ class _ReportResultScreenState extends State<ReportResultScreen> {
               List<String> columnNames =
                   state.generatedReportScreen.first.keys.toList();
               return SingleChildScrollView(
-                scrollDirection: Axis.vertical,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(

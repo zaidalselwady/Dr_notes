@@ -37,7 +37,7 @@ class PatientQuestionnaireCubit extends Cubit<PatientQuestionnaireState> {
           // Iterate over the keys (Q1, Q2, Q3, etc.)
           response.forEach((key, value) {
             // Check if the key starts with "Q" and if the value is not null
-            if (key.startsWith('Q') && value != null) {
+            if (key.startsWith('Q') ) {
               // Create a questionnaire model and add it to the list
               questionnaireList.add(
                 QuestionnaireModel.fromDb(key, value),
@@ -45,6 +45,7 @@ class PatientQuestionnaireCubit extends Cubit<PatientQuestionnaireState> {
             }
           });
           if (questionnaireList.isNotEmpty) {
+            if (isClosed) {}
             emit(GetPatientQuestionnaireSuccess(
                 patientQuestionnaireModel: questionnaireList));
           } else {

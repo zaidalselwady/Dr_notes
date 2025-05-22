@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hand_write_notes/canvas_screen/presentation/view/widgets/proc_dialog.dart';
 import 'package:hand_write_notes/canvas_screen/presentation/view/widgets/show_proc_dialog_result.dart';
 import '../../../../core/repos/data_repo_impl.dart';
 import '../../../../core/utils/api_service.dart';
@@ -58,30 +59,25 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
                               Dio(),
                             )),
                           )..fetchPatientsWithSoapRequest(
-                              "SELECT pp.Procedure_id AS Procedure_id,pv.Procedure_id AS Proc_id_pv,pv.id,pp.Procedure_Desc,pv.Patient_Id,pv.Visit_Date,pv.Procedure_Status,pv.Notes FROM Patients_Procedures pp LEFT JOIN Patients_Visits pv ON pp.Procedure_id = pv.Procedure_id AND pv.Patient_Id = ${widget.patientId} AND pv.Visit_Date = '$_currentImageName' ORDER BY pp.Procedure_id;"),
+                              "SELECT pp.Procedure_id AS Procedure_id,pv.Procedure_id AS Proc_id_pv,    pv.id,pp.Procedure_Desc,mp.Main_Procedure_id,mp.Main_Procedure_Desc,    pv.Patient_Id,pv.Visit_Date,pv.Procedure_Status,pv.Notes FROM Patients_Procedures pp LEFT JOIN Patients_Visits pv ON pp.Procedure_id = pv.Procedure_id AND pv.Patient_Id = ${widget.patientId} AND pv.Visit_Date='$_currentImageName' LEFT JOIN Patients_Main_Procedures mp ON pp.Main_Procedure_id = mp.Main_Procedure_id ORDER BY pp.Procedure_id;"),
                         ),
                       ],
-                      child: ProceduresDialog(
-                        patientId: widget.patientId,
-                        visitDate: _currentImageName,
-                      ),
+                      child: const ProcedureSelectionScreen(),
                     ); // Your dialog
                   },
                 );
-                if (updatedProcedures != null) {
-                  for (var element in updatedProcedures) {
-                    if (element['id'] != 0 && element['id'] != null) {
-                      updateCubit.updatePatient(
-                          "UPDATE Patients_Visits SET Procedure_Status = ${element['percentage']},Notes='${element['notes']}' WHERE id=${element['id']}");
-                    } else {
-                      tempProcList.clear();
-                      tempProcList.add(element);
-                      uploadVisitsCubit.uploadPatientVisits(
-                          widget.patientId,
-                          tempProcList,
-                          widget.image[widget.initialIndex].imgName,
-                          element['notes']);
-                    }
+                for (var element in updatedProcedures!) {
+                  if (element['id'] != 0 && element['id'] != null) {
+                    updateCubit.updatePatient(
+                        "UPDATE Patients_Visits SET Procedure_Status = ${element['percentage']},Notes='${element['notes']}' WHERE id=${element['id']}");
+                  } else {
+                    tempProcList.clear();
+                    tempProcList.add(element);
+                    uploadVisitsCubit.uploadPatientVisits(
+                        widget.patientId,
+                        tempProcList,
+                        widget.image[widget.initialIndex].imgName,
+                        element['notes']);
                   }
                 }
               },

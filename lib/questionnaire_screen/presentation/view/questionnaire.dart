@@ -73,7 +73,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
+            child: ListView.builder(padding: const EdgeInsets.all(20),
               shrinkWrap: true,
               itemCount: questionnaire.length,
               itemBuilder: (context, index) {
@@ -119,7 +119,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
             if (!widget.isNavigateFromVisitScreen) {
               bool allAnswered = questionnaire.every((q) => q.answer != null);
-              if (allAnswered) {
+              //if (allAnswered) {
                 Map<String, bool?> questionAnswerMap = {
                   for (var q in questionnaire) q.question: q.answer
                 };
@@ -139,15 +139,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     ),
                   ),
                 );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please answer all questions',
-                    ),
-                  ),
-                );
-              }
+              //} 
+              // else {
+              //   ScaffoldMessenger.of(context).showSnackBar(
+              //     const SnackBar(
+              //       content: Text(
+              //         'Please answer all questions',
+              //       ),
+              //     ),
+              //   );
+              // }
             } else {
               if (areAnswersDifferent()) {
                 String qAndA = questionnaire.asMap().entries.map((entry) {

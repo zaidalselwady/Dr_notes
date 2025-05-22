@@ -128,7 +128,7 @@ class _SignatureCanvasState extends State<SignatureCanvas> {
                 listener: (context, state) async {
                   if (state is UploadFilesSuccess) {
                     User? user = await saveCubit.getUser();
-                    if (user!.userName == "Dr") {
+                    if (user?.userName == "Dr") {
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(

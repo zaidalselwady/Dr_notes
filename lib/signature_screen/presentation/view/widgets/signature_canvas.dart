@@ -139,8 +139,7 @@ class _SignatureCanvasState extends State<SignatureCanvas> {
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
-                            builder: (context) =>
-                                 PatientConfirmationScreen()),
+                            builder: (context) => PatientConfirmationScreen()),
                         (route) => false, // This removes all routes.
                       );
                     }

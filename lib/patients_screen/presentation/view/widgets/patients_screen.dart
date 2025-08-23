@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/failed_msg_screen_widget.dart';
 import '../../../../core/repos/data_repo_impl.dart';
 import '../../../../core/utils/api_service.dart';
+import '../../../../settings.dart';
 import '../../manger/get_patients_cubit/cubit/get_patients_cubit.dart';
 import 'custom_patients_list.dart';
 
@@ -440,6 +441,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         leading: const Icon(Icons.system_update),
                         title: const Text('Check for updates'),
                         onTap: () => checkForUpdate(context),
+                      ),
+                      const Divider(),
+                      ListTile(
+                        enabled: state.user.userName == "Dr",
+                        leading: const Icon(Icons.settings),
+                        title: const Text('Settings'),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        ),
                       ),
                     ],
                   ),

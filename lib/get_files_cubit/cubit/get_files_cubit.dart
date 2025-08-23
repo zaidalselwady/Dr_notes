@@ -424,8 +424,10 @@ class GetFilesCubit extends Cubit<GetFilesState> {
         imageModels.add(ImageModel(imgName: imgName, imgBase64: imgBase64));
       }
     }
+    if (imageModels.isNotEmpty) {
+      imageModels.removeAt(0); // Remove unwanted first element if necessary
+    }
 
-    imageModels.removeAt(0); // Remove unwanted first element if necessary
     return imageModels;
   }
 
@@ -517,3 +519,5 @@ class GetFilesCubit extends Cubit<GetFilesState> {
           //   );
           //   return base64Decode(base64Padded);
           // }).toList();
+
+

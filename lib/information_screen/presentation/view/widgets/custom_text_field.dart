@@ -10,6 +10,7 @@ class DecoratedTextField extends StatefulWidget {
     this.isPassword = false,
     this.onTap,
     this.readOnly = false,
+    this.validator,
   });
   final TextEditingController controller;
   final TextInputType keyboardType;
@@ -18,6 +19,7 @@ class DecoratedTextField extends StatefulWidget {
   final bool isPassword;
   final VoidCallback? onTap;
   final bool readOnly;
+  final String? Function(String?)? validator;
 
   @override
   State<DecoratedTextField> createState() => _DecoratedTextFieldState();
@@ -33,14 +35,16 @@ class _DecoratedTextFieldState extends State<DecoratedTextField> {
       padding: EdgeInsets.symmetric(
           horizontal: width * 0.05, vertical: height * 0.005),
       child: TextFormField(
+        maxLength: widget.keyboardType == TextInputType.phone ? 10 : null,
         readOnly: widget.readOnly,
         onTap: widget.onTap,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter some text';
-          }
-          return null;
-        },
+        validator: widget.validator ??
+            (value) {
+              if ((value == null || value.isEmpty)) {
+                return 'Please enter some text';
+              }
+              return null;
+            },
         obscureText: widget.isPassword ? _obscureText : false,
         controller: widget.controller,
         keyboardType: widget.keyboardType,

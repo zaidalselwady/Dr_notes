@@ -7,7 +7,7 @@ class HandwritingPainter extends CustomPainter {
   final Path currentPath;
   final bool isErasing;
 
-  HandwritingPainter(this.paths, this.currentPath, this.isErasing);
+  HandwritingPainter(this.paths, this.currentPath, this.isErasing, Paint paint);
 
   @override
   void paint(Canvas canvas, Size size) {

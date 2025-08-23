@@ -66,7 +66,8 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
                     ); // Your dialog
                   },
                 );
-                for (var element in updatedProcedures!) {
+                if (updatedProcedures == null) return;
+                for (var element in updatedProcedures) {
                   if (element['id'] != 0 && element['id'] != null) {
                     updateCubit.updatePatient(
                         "UPDATE Patients_Visits SET Procedure_Status = ${element['percentage']},Notes='${element['notes']}' WHERE id=${element['id']}");

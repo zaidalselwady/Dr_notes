@@ -5,10 +5,13 @@ import 'package:hand_write_notes/get_proc_cubit/cubit/get_proc_cubit.dart';
 import 'package:hand_write_notes/get_report_result_cubit/cubit/get_generated_report_result_cubit.dart';
 import 'package:hand_write_notes/report_result_screen.dart';
 import 'package:hand_write_notes/reporting_screen_cubit/cubit/reporting_cubit.dart';
+import 'package:intl/intl.dart';
 
+import 'core/date_format_service.dart';
 import 'core/repos/data_repo_impl.dart';
 import 'core/utils/api_service.dart';
 import 'search_fields_model.dart';
+import 'settings.dart';
 
 class ReportingScreen extends StatefulWidget {
   const ReportingScreen({super.key});
@@ -40,6 +43,10 @@ class _ReportingScreenState extends State<ReportingScreen> {
       {}; // Stores sub-procedures per mainProcId
   List<int> selectedMainProcedures = [];
   List<int> selectedSubProcedures = [];
+
+  bool hidePercentage = false;
+  String dateFormat = "dd-MM-yyyy"; // Default date format
+  final _settings = SettingsService();
   final Map<int, String> procedureStatuses = {
     1: "25%",
     2: "50%",
@@ -351,6 +358,21 @@ class _ReportingScreenState extends State<ReportingScreen> {
     return 'SELECT $selectFields FROM Patients_Visits pv INNER JOIN Patients_Info pi ON pv.Patient_Id = pi.Patient_Id';
   }
 
+  Future<void> _loadSetting() async {
+    await _settings.init();
+    setState(() {
+      hidePercentage = _settings.getBool(AppSettingsKeys.hidePercentage);
+
+      dateFormat = _settings.getString(AppSettingsKeys.dateFormat);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSetting();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -400,50 +422,59 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              InkWell(
+              TextFormField(
+                readOnly: true,
+                controller: birthDateController,
+                decoration: InputDecoration(
+                  labelText: "Birth Date",
+                  hintText: dateFormat,
+                  border: const OutlineInputBorder(),
+                ),
                 onTap: () async {
                   DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime(2100),
-                  );
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime(2100),
+                      locale: const Locale('en', 'GB'),
+                      initialEntryMode: DatePickerEntryMode.input);
                   setState(() {
                     birthDateController.text =
-                        pickedDate!.toIso8601String().split('T').first;
+                        DateService.format(pickedDate!, dateFormat);
+                    //pickedDate!.toIso8601String().split('T').first;
                   });
-                                },
-                child: IgnorePointer(
-                  child: TextFormField(
-                    controller: birthDateController,
-                    decoration: const InputDecoration(
-                      labelText: "Birth Date",
-                      hintText: "YYYY-MM-DD",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
+                },
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: InkWell(
+                    child: TextFormField(
+                      readOnly: true,
+                      controller: visitDateFromController,
+                      decoration: InputDecoration(
+                        labelText: "Visit Date From",
+                        hintText: dateFormat,
+                        border: const OutlineInputBorder(),
+                      ),
                       onTap: () async {
                         DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(1900),
-                          lastDate: DateTime(2100),
-                        );
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime(2100),
+                            locale: const Locale('en', 'GB'),
+                            initialEntryMode: DatePickerEntryMode.input);
+                        if (pickedDate == null) return;
                         setState(() {
                           visitDateFromController.text =
-                              pickedDate!.toIso8601String().split('T').first;
+                              DateService.format(pickedDate, dateFormat);
+                          //pickedDate!.toIso8601String().split('T').first;
 
                           // Validate date range
                           if (visitDateToController.text.isNotEmpty) {
-                            DateTime visitDateTo =
-                                DateTime.parse(visitDateToController.text);
+                            DateTime visitDateTo = DateFormat(dateFormat)
+                                .parse(visitDateToController.text);
                             if (pickedDate.isAfter(visitDateTo)) {
                               visitDateFromController.clear();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -455,37 +486,37 @@ class _ReportingScreenState extends State<ReportingScreen> {
                             }
                           }
                         });
-                                            },
-                      child: IgnorePointer(
-                        child: TextFormField(
-                          controller: visitDateFromController,
-                          decoration: const InputDecoration(
-                            labelText: "Visit Date From",
-                            hintText: "YYYY-MM-DD",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: InkWell(
+                    child: TextFormField(
+                      readOnly: true,
+                      controller: visitDateToController,
+                      decoration: InputDecoration(
+                        labelText: "Visit Date To",
+                        hintText: dateFormat,
+                        border: const OutlineInputBorder(),
+                      ),
                       onTap: () async {
                         DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(1900),
-                          lastDate: DateTime(2100),
-                        );
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime(2100),
+                            locale: const Locale('en', 'GB'),
+                            initialEntryMode: DatePickerEntryMode.input);
+                        if (pickedDate == null) return;
                         setState(() {
                           visitDateToController.text =
-                              pickedDate!.toIso8601String().split('T').first;
+                              DateService.format(pickedDate, dateFormat);
+                          //pickedDate!.toIso8601String().split('T').first;
 
                           // Validate date range
                           if (visitDateFromController.text.isNotEmpty) {
-                            DateTime visitDateFrom =
-                                DateTime.parse(visitDateFromController.text);
+                            DateTime visitDateFrom = DateFormat(dateFormat)
+                                .parse(visitDateFromController.text);
                             if (visitDateFrom.isAfter(pickedDate)) {
                               visitDateToController.clear();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -497,17 +528,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
                             }
                           }
                         });
-                                            },
-                      child: IgnorePointer(
-                        child: TextFormField(
-                          controller: visitDateToController,
-                          decoration: const InputDecoration(
-                            labelText: "Visit Date To",
-                            hintText: "YYYY-MM-DD",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
+                      },
                     ),
                   ),
                 ],
@@ -614,16 +635,17 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              MultiSelectChip(
-                title: "Procedure Statuses",
-                options: procedureStatuses,
-                selectedItems: selectedProcedureStatuses,
-                onSelectionChanged: (selected) {
-                  setState(() {
-                    selectedProcedureStatuses = selected;
-                  });
-                },
-              ),
+              if (!hidePercentage)
+                MultiSelectChip(
+                  title: "Procedure Statuses",
+                  options: procedureStatuses,
+                  selectedItems: selectedProcedureStatuses,
+                  onSelectionChanged: (selected) {
+                    setState(() {
+                      selectedProcedureStatuses = selected;
+                    });
+                  },
+                ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: notesController,
@@ -640,10 +662,10 @@ class _ReportingScreenState extends State<ReportingScreen> {
                     onPressed: () {
                       if (visitDateFromController.text.isNotEmpty &&
                           visitDateToController.text.isNotEmpty) {
-                        DateTime visitDateFrom =
-                            DateTime.parse(visitDateFromController.text);
-                        DateTime visitDateTo =
-                            DateTime.parse(visitDateToController.text);
+                        DateTime visitDateFrom = DateFormat(dateFormat)
+                            .parse(visitDateFromController.text);
+                        DateTime visitDateTo = DateFormat(dateFormat)
+                            .parse(visitDateToController.text);
                         if (visitDateFrom.isAfter(visitDateTo)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -657,9 +679,12 @@ class _ReportingScreenState extends State<ReportingScreen> {
 
                       // Logic to generate the report based on criteria
                       final criteria = {
-                        "Birth Date": birthDateController.text,
-                        "Visit Date From": visitDateFromController.text,
-                        "Visit Date To": visitDateToController.text,
+                        "Birth Date": DateService.format(
+                            birthDateController.text, dateFormat),
+                        "Visit Date From": DateService.format(
+                            visitDateFromController.text, dateFormat),
+                        "Visit Date To": DateService.format(
+                            visitDateToController.text, dateFormat),
                         "Procedures": selectedSubProcedures,
                         "Main Procedures": selectedMainProcedures,
                         "Procedure Statuses": selectedProcedureStatuses,

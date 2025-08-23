@@ -4,10 +4,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hand_write_notes/dashboard_screen/presentation/view/dashboardScreen.dart';
 import 'package:hand_write_notes/delete_patient_cubit/cubit/delete_patient_cubit.dart';
+import 'package:hand_write_notes/get_files_cubit/cubit/get_files_cubit.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/cubit/login_cubit.dart';
 import 'package:hand_write_notes/login_screen/presentation/manger/save_user_locally_cubit/cubit/save_user_locally_cubit.dart';
 import 'package:hand_write_notes/login_screen/presentation/view/login.dart';
-import 'package:hand_write_notes/patients_screen/presentation/view/patients_in_clinic_screen.dart';
+import 'package:hand_write_notes/settings.dart';
 import 'package:hand_write_notes/signature_screen/presentation/manger/convert_signature_to_img_cubit/convert_signature_to_img_cubit.dart';
 import 'package:hand_write_notes/signature_screen/presentation/manger/upload_patient_info_cubit/upload_patient_info_cubit.dart';
 import 'package:hand_write_notes/signature_screen/presentation/manger/upload_patient_questionnaire_cubit/upload_patient_questionnaire_cubit.dart';
@@ -21,7 +22,7 @@ import 'convert_canvas_B64_cubit/cubit/convert_canvas_b64_cubit.dart';
 import 'create_folder_cubit/cubit/create_folder_cubit.dart';
 import 'login_screen/data/user_model.dart';
 import 'patients_screen/presentation/manger/get_patients_cubit/cubit/get_patients_cubit.dart';
-import 'patients_screen/presentation/view/all_patients_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -34,6 +35,7 @@ class SimpleBlocObserver extends BlocObserver {
 Future<void> main() async {
   await dotenv.load(fileName: "lib/.env");
   Bloc.observer = SimpleBlocObserver();
+  await SettingsService().init();
   runApp(const MyApp());
 }
 
@@ -82,6 +84,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider(
+          create: (context) => GetFilesCubit(
+            DataRepoImpl(
+              ApiService(
+                Dio(),
+              ),
+            ),
+          ),
+        ),
         BlocProvider(
           create: (context) => ConvertCanvasB64Cubit(),
         ),
@@ -174,17 +185,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ],
       child: Builder(
         builder: (context) => MaterialApp(
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: [
+            Locale('en', 'GB'), // British English uses DD/MM/YYYY
+          ],
           debugShowCheckedModeBanner: false,
           title: 'Dr Notes',
           theme: ThemeData(
-            
             appBarTheme: AppBarTheme(
-              backgroundColor:  Colors.transparent,
+              backgroundColor: Colors.transparent,
               iconTheme: IconThemeData(
                 color: Colors.teal[800], // Change color
                 size: 28, // Change size
               ),
-              
             ),
             textTheme: GoogleFonts.robotoTextTheme(),
             colorScheme: ColorScheme.fromSeed(
@@ -211,7 +227,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     );
   }
 }
-
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.user});
@@ -285,9 +300,7 @@ class _SplashScreenState extends State<SplashScreen>
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                 Color(0xFFE0F7FA), Color(0xFFB2EBF2)
-                ],
+                colors: [Color(0xFFE0F7FA), Color(0xFFB2EBF2)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -334,19 +347,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // class SplashScreen extends StatefulWidget {
 //   const SplashScreen({super.key, required this.user});

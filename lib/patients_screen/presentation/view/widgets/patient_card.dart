@@ -160,7 +160,7 @@ class _PatientCardState extends State<PatientCard> {
                             "${widget.patientsInfo.firstName} ${widget.patientsInfo.midName} ${widget.patientsInfo.lastName}",
                             style: GoogleFonts.cairo(
                               fontSize:
-                                  MediaQuery.of(context).size.width * 0.045,
+                                  MediaQuery.of(context).size.width * 0.035,
                               color: const Color(0xFF243642),
                             ),
                             textDirection: TextDirection.rtl,
@@ -170,9 +170,9 @@ class _PatientCardState extends State<PatientCard> {
                           Text(
                             widget.patientsInfo.name, // Arabic Name
                             style: GoogleFonts.roboto(
-                              // Use an Arabic-friendly font
+                              // Use an Arabic-friendly font 
                               fontSize:
-                                  MediaQuery.of(context).size.width * 0.035,
+                                  MediaQuery.of(context).size.width * 0.03,
                               color: Colors.grey[800],
                               fontWeight: FontWeight.w700
                             ),

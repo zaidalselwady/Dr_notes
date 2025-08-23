@@ -1,8 +1,6 @@
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:hand_write_notes/canvas_screen/presentation/view/canvas_screen.dart';
 import 'package:hand_write_notes/get_files_cubit/cubit/get_files_cubit.dart';
 import 'package:hand_write_notes/information_screen/data/child_info_model.dart';
@@ -20,9 +18,6 @@ import '../../../show_info_screen/presentation/manger/update_patient_info_cubit/
 import '../../../update_patient_state_cubit/cubit/update_patient_state_cubit.dart';
 import '../../data/image_model.dart';
 import 'widgets/full_screen_img_view.dart';
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/material.dart';
 
 class PatientVisitsScreen extends StatefulWidget {
   const PatientVisitsScreen(
@@ -39,10 +34,16 @@ class PatientVisitsScreen extends StatefulWidget {
 }
 
 class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
+  List<ImageModel> images = [];
   int calculateAgeInYears(String birthDate) {
     try {
       // Define possible date formats
-      final List<String> dateFormats = ['d-M-yyyy', 'dd-MM-yyyy', 'yyyy-MM-dd'];
+      final List<String> dateFormats = [
+        'd-M-yyyy',
+        'dd-MM-yyyy',
+        'yyyy-MM-dd',
+        'dd/MM/yyyy'
+      ];
 
       DateTime? parsedDate;
       for (String format in dateFormats) {
@@ -76,84 +77,108 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
   }
 
   @override
+  initState() {
+    super.initState();
+    // Fetch images when the widget is initialized
+    context.read<GetFilesCubit>().getImages3("P${widget.patientId}");
+  }
+
+  @override
   Widget build(BuildContext context) {
     int age = calculateAgeInYears(widget.patientsInfo.birthDate);
 
-    return BlocProvider(
-      create: (context) => GetFilesCubit(
-        DataRepoImpl(
-          ApiService(Dio()),
-        ),
-      )..getImages3("P${widget.patientId}"),
-      child: Scaffold(
-        appBar: AppBar(),
-        extendBodyBehindAppBar: true,
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFE0F7FA), Color(0xFFB2EBF2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+    return Scaffold(
+      appBar: AppBar(),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFE0F7FA), Color(0xFFB2EBF2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Always visible patient info card
-                PatientInfoCard(
-                  patientInfo: widget.patientsInfo,
-                  medicalHistory: "",
-                  age: age.toString(),
-                ),
-                if (widget.user.userName == "Dr")
-                  Expanded(
-                    child: BlocBuilder<GetFilesCubit, GetFilesState>(
-                      builder: (context, state) {
-                        if (state is GetFilesSuccess) {
-                          if (state.images.isNotEmpty) {
-                            return RefreshIndicator(
-                              onRefresh: () async {
-                                context
-                                    .read<GetFilesCubit>()
-                                    .getImages3("P${widget.patientId}");
-                              },
-                              child: GridView.builder(
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 4,
-                                  mainAxisSpacing: 4,
-                                ),
-                                itemCount: state.images.length,
-                                itemBuilder: (context, index) {
-                                  return GestureDetector(
-                                    onTap: () => viewImage(state.images, index),
-                                    child: Image.memory(
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(
-                                            Icons.image_not_supported_rounded);
-                                      },
-                                      state.images[index].imgBase64,
-                                      fit: BoxFit.fill,
-                                    ),
-                                  );
-                                },
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Always visible patient info card
+              PatientInfoCard(
+                patientInfo: widget.patientsInfo,
+                medicalHistory: "",
+                age: age.toString(),
+              ),
+              if (widget.user.userName == "Dr")
+                Expanded(
+                  child: BlocConsumer<GetFilesCubit, GetFilesState>(
+                    listener: (context, state) {
+                      if (state is GetFilesSuccess) {
+                        images = List<ImageModel>.from(state.images)
+                          ..sort((a, b) => b.imgName.compareTo(a.imgName));
+                        // Sort images
+                      }
+                    },
+                    builder: (context, state) {
+                      if (state is GetFilesSuccess) {
+                        if (images.isNotEmpty) {
+                          return RefreshIndicator(
+                            onRefresh: () async {
+                              context
+                                  .read<GetFilesCubit>()
+                                  .getImages3("P${widget.patientId}");
+                            },
+                            child: GridView.builder(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 4,
+                                mainAxisSpacing: 4,
                               ),
-                            );
-                          } else {
-                            debugPrint("");
-                            return WarningMsgScreen(
-                              onRefresh: () async {
-                                context
-                                    .read<GetFilesCubit>()
-                                    .getImages3("P${widget.patientId}");
+                              itemCount: images.length,
+                              itemBuilder: (context, index) {
+                                return Stack(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => viewImage(images, index),
+                                      child: Image.memory(
+                                        images[index].imgBase64,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return const Icon(Icons
+                                              .image_not_supported_rounded);
+                                        },
+                                      ),
+                                    ),
+                                    // الاسم فوق الصورة
+                                    Positioned(
+                                      top: 8, // المسافة من فوق
+                                      left: 8, // المسافة من الشمال
+                                      right: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 3),
+                                        color: Colors.black.withOpacity(
+                                            0.5), // خلفية شبه شفافة
+                                        child: Text(
+                                          images[index].imgName,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
                               },
-                              state: state,
-                              msg: "No Visits",
-                            );
-                          }
-                        } else if (state is GetFilesFaild) {
+                            ),
+                          );
+                        } else {
+                          debugPrint("");
                           return WarningMsgScreen(
                             onRefresh: () async {
                               context
@@ -161,114 +186,129 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
                                   .getImages3("P${widget.patientId}");
                             },
                             state: state,
-                            msg: state.error,
-                          );
-                        } else {
-                          return const Center(
-                            child: CircularProgressIndicator(),
+                            msg: "No Visits",
                           );
                         }
-                      },
-                    ),
-                  )
-            
-                // Expanded(
-                //   child: BlocBuilder<GetFilesCubit, GetFilesState>(
-                //     builder: (context, state) {
-                //       if (state is GetFilesSuccess) {
-                //         if (state.images.isNotEmpty) {
-                //           return RefreshIndicator(
-                //             onRefresh: () async {
-                //               context
-                //                   .read<GetFilesCubit>()
-                //                   .getImages("P${widget.patientId}");
-                //             },
-                //             child: GridView.builder(
-                //               gridDelegate:
-                //                   const SliverGridDelegateWithFixedCrossAxisCount(
-                //                 crossAxisCount: 3,
-                //                 crossAxisSpacing: 4,
-                //                 mainAxisSpacing: 4,
-                //               ),
-                //               itemCount: state.images.length,
-                //               itemBuilder: (context, index) {
-                //                 return GestureDetector(
-                //                   onTap: () => viewImage(state.images, index),
-                //                   child: Image.memory(
-                //                     errorBuilder: (context, error, stackTrace) {
-                //                       return const Icon(
-                //                           Icons.image_not_supported_rounded);
-                //                     },
-                //                     state.images[index].imgBase64,
-                //                     fit: BoxFit.fill,
-                //                   ),
-                //                 );
-                //               },
-                //             ),
-                //           );
-                //         } else {
-                //           return WarningMsgScreen(
-                //             onRefresh: () async {
-                //               context
-                //                   .read<GetFilesCubit>()
-                //                   .getImages("P${widget.patientId}");
-                //             },
-                //             state: state,
-                //             msg: "No Visits",
-                //           );
-                //         }
-                //       } else if (state is GetFilesFaild) {
-                //         return WarningMsgScreen(
-                //           onRefresh: () async {
-                //             context
-                //                 .read<GetFilesCubit>()
-                //                 .getImages("P${widget.patientId}");
-                //           },
-                //           state: state,
-                //           msg: state.error,
-                //         );
-                //       } else {
-                //         return const Center(
-                //           child: CircularProgressIndicator(),
-                //         );
-                //       }
-                //     },
-                //   ),
-                // )
-                else
-                  const Center(
-                      child: Text(
-                    "No access to this feature",
-                    style: TextStyle(fontSize: 20),
-                  ))
-              ],
-            ),
+                      } else if (state is GetFilesFaild) {
+                        return WarningMsgScreen(
+                          onRefresh: () async {
+                            context
+                                .read<GetFilesCubit>()
+                                .getImages3("P${widget.patientId}");
+                          },
+                          state: state,
+                          msg: state.error,
+                        );
+                      } else {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                    },
+                  ),
+                )
+
+              // Expanded(
+              //   child: BlocBuilder<GetFilesCubit, GetFilesState>(
+              //     builder: (context, state) {
+              //       if (state is GetFilesSuccess) {
+              //         if (state.images.isNotEmpty) {
+              //           return RefreshIndicator(
+              //             onRefresh: () async {
+              //               context
+              //                   .read<GetFilesCubit>()
+              //                   .getImages("P${widget.patientId}");
+              //             },
+              //             child: GridView.builder(
+              //               gridDelegate:
+              //                   const SliverGridDelegateWithFixedCrossAxisCount(
+              //                 crossAxisCount: 3,
+              //                 crossAxisSpacing: 4,
+              //                 mainAxisSpacing: 4,
+              //               ),
+              //               itemCount: state.images.length,
+              //               itemBuilder: (context, index) {
+              //                 return GestureDetector(
+              //                   onTap: () => viewImage(state.images, index),
+              //                   child: Image.memory(
+              //                     errorBuilder: (context, error, stackTrace) {
+              //                       return const Icon(
+              //                           Icons.image_not_supported_rounded);
+              //                     },
+              //                     state.images[index].imgBase64,
+              //                     fit: BoxFit.fill,
+              //                   ),
+              //                 );
+              //               },
+              //             ),
+              //           );
+              //         } else {
+              //           return WarningMsgScreen(
+              //             onRefresh: () async {
+              //               context
+              //                   .read<GetFilesCubit>()
+              //                   .getImages("P${widget.patientId}");
+              //             },
+              //             state: state,
+              //             msg: "No Visits",
+              //           );
+              //         }
+              //       } else if (state is GetFilesFaild) {
+              //         return WarningMsgScreen(
+              //           onRefresh: () async {
+              //             context
+              //                 .read<GetFilesCubit>()
+              //                 .getImages("P${widget.patientId}");
+              //           },
+              //           state: state,
+              //           msg: state.error,
+              //         );
+              //       } else {
+              //         return const Center(
+              //           child: CircularProgressIndicator(),
+              //         );
+              //       }
+              //     },
+              //   ),
+              // )
+              else
+                const Center(
+                    child: Text(
+                  "No access to this feature",
+                  style: TextStyle(fontSize: 20),
+                ))
+            ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: widget.user.userName == "Dr"
-              ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BlocProvider(
-                        create: (context) => UploadPatientVisitsCubit(
-                          DataRepoImpl(
-                            ApiService(
-                              Dio(),
-                            ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: widget.user.userName == "Dr"
+            ? () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider(
+                      create: (context) => UploadPatientVisitsCubit(
+                        DataRepoImpl(
+                          ApiService(
+                            Dio(),
                           ),
                         ),
-                        child: HandwritingScreen(
-                          patientId: widget.patientId,
-                        ),
+                      ),
+                      child: HandwritingScreen(
+                        patientId: widget.patientId,
                       ),
                     ),
-                  );
+                  ),
+                );
+                if (result == true) {
+                  context
+                      .read<GetFilesCubit>()
+                      .getImages3("P${widget.patientId}");
                 }
-              : null,
-          child: const Icon(Icons.create),
-        ),
+              }
+            : null,
+        child: const Icon(Icons.create),
       ),
     );
   }

@@ -20,7 +20,7 @@ class UploadFilesCubit extends Cubit<UploadFilesState> {
           newName: folderName,
           currentFolder: "",
           filePath:
-              "DrApp/$patientFolder/$imageName.png", //P1 should be got from the selected patient info
+              "DrApp/$patientFolder/$imageName.png", 
           imageBytes: base64Image,
           sqlStr: "");
       result.fold((failure) {

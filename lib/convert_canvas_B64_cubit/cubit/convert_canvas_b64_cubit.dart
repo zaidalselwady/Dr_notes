@@ -46,7 +46,11 @@ class ConvertCanvasB64Cubit extends Cubit<ConvertCanvasB64State> {
 
     ui.PictureRecorder recorder = ui.PictureRecorder();
     Canvas canvas = Canvas(recorder);
-    final painter = HandwritingPainter(paths, currentPath, isErasing);
+    final painter = HandwritingPainter(paths, currentPath, isErasing,Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round);
     painter.paint(canvas, size);
 
     return recorder

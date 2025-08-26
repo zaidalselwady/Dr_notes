@@ -50,6 +50,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    
     // Add observer to monitor app lifecycle
     WidgetsBinding.instance.addObserver(this);
   }
@@ -84,6 +85,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider(
+          create: (context) => UpdateCubit(UpdateService()),
+        ),
         BlocProvider(
           create: (context) => GetFilesCubit(
             DataRepoImpl(
@@ -185,11 +189,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ],
       child: Builder(
         builder: (context) => MaterialApp(
-          localizationsDelegates: [
+          localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
           ],
-          supportedLocales: [
+          supportedLocales: const [
             Locale('en', 'GB'), // British English uses DD/MM/YYYY
           ],
           debugShowCheckedModeBanner: false,
@@ -210,7 +214,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ),
             useMaterial3: true,
           ),
-          home: FutureBuilder<User?>(
+          home: 
+          FutureBuilder<User?>(
             future: BlocProvider.of<SaveUserLocallyCubit>(context).getUser(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -320,7 +325,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Image.asset('assets/logo.png', height: 160),
                     const SizedBox(height: 20),
                     const Text(
-                      'DrRecords',
+                      'Dr. Notes',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

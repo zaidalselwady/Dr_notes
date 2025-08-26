@@ -21,7 +21,7 @@ class UpdatePatientInfoCubit extends Cubit<UpdatePatientInfoState> {
       String lastName) async {
     emit(UpdatingPatientInfo());
     var result = await dataRepo.fetchWithSoapRequest("Insert_Update_cmd",
-        "UPDATE Patients_Info SET address='$address' , email='$email' , phone='$phone' , school='$school' , name='$name' , FirstName=N'$firstName' , MiddleName=N'$midName' , LastName=N'$lastName' WHERE Patient_Id=$patientId");
+        "UPDATE Patients_Info SET address=N'$address' , email='$email' , phone='$phone' , school=N'$school' , name='$name' , FirstName=N'$firstName' , MiddleName=N'$midName' , LastName=N'$lastName' WHERE Patient_Id=$patientId");
     result.fold((failure) {
       emit(
         UpdatePatientInfoFailed(error: failure.errorMsg),

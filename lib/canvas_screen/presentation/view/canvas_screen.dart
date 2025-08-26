@@ -327,14 +327,12 @@ class _HandwritingScreenState extends State<HandwritingScreen> {
                   "P${widget.patientId}",
                 );
 
-                if (state.procedures.isNotEmpty) {
-                  uploadVisitsCubit.uploadPatientVisits(
-                    widget.patientId,
-                    state.procedures,
-                    imageName,
-                    "",
-                  );
-                }
+                uploadVisitsCubit.uploadPatientVisits(
+                  widget.patientId,
+                  state.procedures,
+                  imageName,
+                  "",
+                );
               } else if (state is CanvasConversionError) {
                 _showErrorMessage('Conversion Error: ${state.errorMessage}');
               }

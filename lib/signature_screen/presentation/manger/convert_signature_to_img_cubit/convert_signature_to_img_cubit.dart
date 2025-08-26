@@ -12,8 +12,9 @@ class ConvertSignatureToImgCubit extends Cubit<ConvertSignatureToImgState> {
   /// Convert the signature canvas to Base64 string
   Future<String?> convertSignatureToBase64(
       SignatureController controller) async {
-    emit(ConvertingSignature());
+    emit(ConvertSignatureInitial());
     try {
+      emit(ConvertingSignature());
       if (controller.isNotEmpty) {
         final signatureBytes = await controller.toPngBytes();
         if (signatureBytes != null) {

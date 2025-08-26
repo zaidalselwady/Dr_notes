@@ -15,19 +15,36 @@ class UploadPatientVisitsCubit extends Cubit<UploadPatientVisitsState> {
 
   // SettingsService _settings = SettingsService();
   // String dateFormat = "dd/MM/yyyy"; // Default format
-  Future<void> uploadPatientVisits(int patientId, List<dynamic> procedureId,
-      String visitDate, String notes) async {
+  Future<void> uploadPatientVisits(
+    int patientId,
+    List<dynamic> procedures,
+    String imageName,
+    String notes,
+  ) async {
     emit(UploadingPatientVisits());
-    // dateFormat = _settings.getString(AppSettingsKeys.dateFormat,
-    //     defaultValue: "dd/MM/yyyy");
     var response;
-    // String visitDate1 = visitDate.split(' ')[0];
-    //String date = DateService.format(visitDate, dateFormat);
-    for (var element in procedureId) {
-      response = await dataRepo.fetchWithSoapRequest("Insert_Update_cmd",
-          "INSERT INTO Patients_Visits (Patient_Id,Procedure_id,Visit_Date,Procedure_Status,Notes) VALUES ($patientId , ${element['procedureId']} , '$visitDate' , ${element['percentage']},'${element['notes']}')");
-      if (procedureId.indexOf(element) == procedureId.length - 1) {}
+
+    // لو فاضي خليها عنصر واحد بديل
+    final procs = procedures.isEmpty
+        ? [
+            {'procedureId': 0, 'percentage': 0, 'notes': null}
+          ]
+        : procedures;
+
+    for (var element in procs) {
+      final procId = element['procedureId'] ?? 0;
+      final procStatus = element['percentage'] ?? 0;
+      final procNotes =
+          element['notes'] == null ? "NULL" : "'${element['notes']}'";
+      final visitDate = imageName.split(".").first;
+
+      response = await dataRepo.fetchWithSoapRequest(
+        "Insert_Update_cmd",
+        "INSERT INTO Patients_Visits (Patient_Id,Procedure_id,Visit_Date,Procedure_Status,Notes) "
+            "VALUES ($patientId , $procId , '$visitDate' , $procStatus , $procNotes)",
+      );
     }
+
     response.fold((failure) {
       emit(UploadPatientVisitsFailed(error: failure.errorMsg));
     }, (inserted) async {
@@ -36,14 +53,39 @@ class UploadPatientVisitsCubit extends Cubit<UploadPatientVisitsState> {
           document.findAllElements('Insert_Update_cmdResult').first;
       final jsonString = resultElement.innerText;
       if (jsonString == "1") {
-        emit(
-          UploadPatientVisitsSuccess(),
-        );
+        emit(UploadPatientVisitsSuccess());
       } else {
-        emit(
-          UploadPatientVisitsFailed(error: "Failed"),
-        );
+        emit(UploadPatientVisitsFailed(error: "Failed"));
       }
     });
   }
+
+  // Future<void> uploadPatientVisits(int patientId, List<dynamic> procedures,
+  //     String visitDate, String notes) async {
+  //   emit(UploadingPatientVisits());
+  //   var response;
+
+  //   for (var element in procedures) {
+  //     response = await dataRepo.fetchWithSoapRequest("Insert_Update_cmd",
+  //         "INSERT INTO Patients_Visits (Patient_Id,Procedure_id,Visit_Date,Procedure_Status,Notes) VALUES ($patientId , ${element['procedureId']} , '$visitDate' , ${element['percentage']},'${element['notes']}')");
+  //     if (procedures.indexOf(element) == procedures.length - 1) {}
+  //   }
+  //   response.fold((failure) {
+  //     emit(UploadPatientVisitsFailed(error: failure.errorMsg));
+  //   }, (inserted) async {
+  //     final document = xml.XmlDocument.parse(inserted.body);
+  //     final resultElement =
+  //         document.findAllElements('Insert_Update_cmdResult').first;
+  //     final jsonString = resultElement.innerText;
+  //     if (jsonString == "1") {
+  //       emit(
+  //         UploadPatientVisitsSuccess(),
+  //       );
+  //     } else {
+  //       emit(
+  //         UploadPatientVisitsFailed(error: "Failed"),
+  //       );
+  //     }
+  //   });
+  // }
 }

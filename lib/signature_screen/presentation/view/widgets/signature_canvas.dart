@@ -36,6 +36,7 @@ class _SignatureCanvasState extends State<SignatureCanvas> {
     _controller.dispose();
     super.dispose();
   }
+  bool isActive = true;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +149,7 @@ class _SignatureCanvasState extends State<SignatureCanvas> {
                   }
                 },
                 builder: (context, state) {
+                  
                   if (state is ConvertingSignature ||
                       state is UploadingPatientInfo ||
                       state is UploadingPatientQuestionnaire ||
@@ -155,14 +157,19 @@ class _SignatureCanvasState extends State<SignatureCanvas> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   return ElevatedButton(
-                    onPressed: () async {
-                      // Save the signature image
-                      if (_controller.isNotEmpty) {
-                        //final signature = await _controller.toPngBytes();
-                        base64String = await convertCubit
-                            .convertSignatureToBase64(_controller);
-                      }
-                    },
+                    onPressed: (state is ConvertingSignature ||
+                            state is UploadingPatientInfo ||
+                            state is UploadingPatientQuestionnaire ||
+                            state is UploadingFiles)
+                        ? null // الزر معطل
+                        : () async {
+                            if (_controller.isNotEmpty && isActive) {
+                              isActive = false;
+
+                              base64String = await convertCubit
+                                  .convertSignatureToBase64(_controller);
+                            }
+                          },
                     child: const Text("Save"),
                   );
                 },

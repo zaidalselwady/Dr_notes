@@ -29,7 +29,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     var updateCubit = BlocProvider.of<UpdatePatientStateCubit>(context);
     if (_formKey.currentState!.validate()) {
       await updateCubit.updatePatient(
-          "UPDATE Patients_Users SET Password = '${_newPasswordController.text}' WHERE User_Id=${user!.userId}");
+          "UPDATE Patients_Users SET Password = '${_newPasswordController.text}' WHERE User_Id=${user!.userId}",true);
     }
   }
 

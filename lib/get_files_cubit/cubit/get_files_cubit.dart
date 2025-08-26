@@ -325,6 +325,8 @@ class GetFilesCubit extends Cubit<GetFilesState> {
     await _cacheImages(allImages, cacheManager, cacheKey);
 
     // ✅ Emit the final images list
+    allImages = List<ImageModel>.from(allImages)
+      ..sort((a, b) => b.imgName.compareTo(a.imgName));
     emit(GetFilesSuccess(images: allImages));
   }
 
@@ -409,8 +411,8 @@ class GetFilesCubit extends Cubit<GetFilesState> {
       List<String> parts = element.split("IMAGENAME");
 
       if (parts.length == 2) {
-        String imgName = parts[1].split(' ')[0].trim();
-        String base64String = parts[0].trim();
+        String imgName = parts[1].trim();
+        String base64String = parts[0];
 
         // Clean and decode Base64 string
         String cleanedBase64String =
@@ -519,5 +521,6 @@ class GetFilesCubit extends Cubit<GetFilesState> {
           //   );
           //   return base64Decode(base64Padded);
           // }).toList();
+
 
 

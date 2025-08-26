@@ -113,8 +113,9 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
                   child: BlocConsumer<GetFilesCubit, GetFilesState>(
                     listener: (context, state) {
                       if (state is GetFilesSuccess) {
-                        images = List<ImageModel>.from(state.images)
-                          ..sort((a, b) => b.imgName.compareTo(a.imgName));
+                        // images = List<ImageModel>.from(state.images)
+                        //   ..sort((a, b) => b.imgName.compareTo(a.imgName));
+                        images = state.images;
                         // Sort images
                       }
                     },
@@ -531,7 +532,7 @@ class PatientInfoCard extends StatelessWidget {
                   TextButton(
                     onPressed: () {
                       updateCubit.updatePatient(
-                          "UPDATE Patients_Info SET isOnClinic = 0 WHERE Patient_Id=${patientInfo.patientId}");
+                          "UPDATE Patients_Info SET isOnClinic = 0 WHERE Patient_Id=${patientInfo.patientId}",true);
                     },
                     child: Text(
                       "Finish visit",

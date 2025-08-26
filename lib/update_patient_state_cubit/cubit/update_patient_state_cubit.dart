@@ -100,7 +100,7 @@ class UpdatePatientStateCubit extends Cubit<UpdatePatientStateState> {
     return "UPDATE Patients_Questionnaire SET ${updateFields.join(', ')} WHERE Patient_Id = $patientId";
   }
 
-  Future<void> updatePatient(String sqlStr) async {
+  Future<void> updatePatient(String sqlStr, bool isFinish) async {
     emit(UpdatingPatientState());
     var result =
         await dataRepo.fetchWithSoapRequest("Insert_Update_cmd", sqlStr);
@@ -114,14 +114,12 @@ class UpdatePatientStateCubit extends Cubit<UpdatePatientStateState> {
           document.findAllElements('Insert_Update_cmdResult').first;
       final jsonString = resultElement.innerText;
       if (int.parse(jsonString) == 1) {
-        emit(UpdatePatientStateSuccess());
+        if (isFinish) {
+          emit(UpdatePatientStateSuccess());
+        }
       } else {}
     });
   }
 }
 
 // UPDATE Patients_Visits SET Procedure_Status = 4,Notes='Done' WHERE id=26'
-
-
-
-  

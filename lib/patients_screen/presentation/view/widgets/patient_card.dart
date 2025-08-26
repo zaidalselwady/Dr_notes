@@ -170,12 +170,11 @@ class _PatientCardState extends State<PatientCard> {
                           Text(
                             widget.patientsInfo.name, // Arabic Name
                             style: GoogleFonts.roboto(
-                              // Use an Arabic-friendly font 
-                              fontSize:
-                                  MediaQuery.of(context).size.width * 0.03,
-                              color: Colors.grey[800],
-                              fontWeight: FontWeight.w700
-                            ),
+                                // Use an Arabic-friendly font
+                                fontSize:
+                                    MediaQuery.of(context).size.width * 0.03,
+                                color: Colors.grey[800],
+                                fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -291,8 +290,8 @@ class _ToggleButtonWidgetState extends State<ToggleButtonWidget> {
 
               // Perform the database update
               widget.updateCubit.updatePatient(
-                "UPDATE Patients_Info SET isOnClinic = ${widget.patientsInfo.isInClinic ? 1 : 0} WHERE Patient_Id=${widget.patientsInfo.patientId}",
-              );
+                  "UPDATE Patients_Info SET isOnClinic = ${widget.patientsInfo.isInClinic ? 1 : 0} WHERE Patient_Id=${widget.patientsInfo.patientId}",
+                  true);
             },
       fillColor: const Color(0xFF009688).withOpacity(0.2),
       color: const Color(0xFF243642),

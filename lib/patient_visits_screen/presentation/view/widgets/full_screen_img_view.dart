@@ -42,112 +42,108 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
     var updateCubit = BlocProvider.of<UpdatePatientStateCubit>(context);
     var uploadVisitsCubit = BlocProvider.of<UploadPatientVisitsCubit>(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_currentImageName),
-        actions: [
-          IconButton(
-              onPressed: () async {
-                List<dynamic>? updatedProcedures =
-                    await showDialog<List<dynamic>>(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return MultiBlocProvider(
-                      providers: [
-                        BlocProvider<GetProcCubit>(
-                          create: (context) => GetProcCubit(
-                            DataRepoImpl(ApiService(
-                              Dio(),
-                            )),
-                          )..fetchPatientsWithSoapRequest(
-                              "SELECT pp.Procedure_id AS Procedure_id,pv.Procedure_id AS Proc_id_pv,    pv.id,pp.Procedure_Desc,mp.Main_Procedure_id,mp.Main_Procedure_Desc,    pv.Patient_Id,pv.Visit_Date,pv.Procedure_Status,pv.Notes FROM Patients_Procedures pp LEFT JOIN Patients_Visits pv ON pp.Procedure_id = pv.Procedure_id AND pv.Patient_Id = ${widget.patientId} AND pv.Visit_Date='$_currentImageName' LEFT JOIN Patients_Main_Procedures mp ON pp.Main_Procedure_id = mp.Main_Procedure_id ORDER BY pp.Procedure_id;"),
-                        ),
-                      ],
-                      child: const ProcedureSelectionScreen(),
-                    ); // Your dialog
-                  },
-                );
-                if (updatedProcedures == null) return;
-                for (var element in updatedProcedures) {
-                  if (element['id'] != 0 && element['id'] != null) {
-                    updateCubit.updatePatient(
-                        "UPDATE Patients_Visits SET Procedure_Status = ${element['percentage']},Notes='${element['notes']}' WHERE id=${element['id']}");
-                  } else {
-                    tempProcList.clear();
-                    tempProcList.add(element);
-                    uploadVisitsCubit.uploadPatientVisits(
-                        widget.patientId,
-                        tempProcList,
-                        widget.image[widget.initialIndex].imgName,
-                        element['notes']);
+        appBar: AppBar(
+          title: Text(_currentImageName.split(" ").first),
+          actions: [
+            IconButton(
+                onPressed: () async {
+                  String imgName = _currentImageName.split(".").first;
+                  List<dynamic>? updatedProcedures =
+                      await showDialog<List<dynamic>>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return MultiBlocProvider(
+                        providers: [
+                          BlocProvider<GetProcCubit>(
+                            create: (context) => GetProcCubit(
+                              DataRepoImpl(ApiService(
+                                Dio(),
+                              )),
+                            )..fetchPatientsWithSoapRequest(
+                                "SELECT pp.Procedure_id AS Procedure_id,pv.Procedure_id AS Proc_id_pv,    pv.id,pp.Procedure_Desc,mp.Main_Procedure_id,mp.Main_Procedure_Desc,    pv.Patient_Id,pv.Visit_Date,pv.Procedure_Status,pv.Notes FROM Patients_Procedures pp LEFT JOIN Patients_Visits pv ON pp.Procedure_id = pv.Procedure_id AND pv.Patient_Id = ${widget.patientId} AND pv.Visit_Date='$imgName' LEFT JOIN Patients_Main_Procedures mp ON pp.Main_Procedure_id = mp.Main_Procedure_id ORDER BY pp.Procedure_id;"),
+                          ),
+                        ],
+                        child: const ProcedureSelectionScreen(),
+                      ); // Your dialog
+                    },
+                  );
+                  if (updatedProcedures == null) return;
+                  for (var element in updatedProcedures) {
+                    if (element['id'] != 0 && element['id'] != null) {
+                      updateCubit.updatePatient(
+                          "UPDATE Patients_Visits SET Procedure_Status = ${element['percentage']},Notes='${element['notes']}' WHERE id=${element['id']}",
+                          updatedProcedures.indexOf(element) ==
+                              updatedProcedures.length - 1);
+                    } else {
+                      tempProcList.clear();
+                      tempProcList.add(element);
+                      uploadVisitsCubit.uploadPatientVisits(widget.patientId,
+                          tempProcList, imgName, element['notes']);
+                    }
                   }
+                },
+                icon: const Icon(
+                  Icons.info_outline,
+                  color: Colors.black,
+                ))
+          ],
+        ),
+        body: MultiBlocListener(
+          listeners: [
+            BlocListener<UploadPatientVisitsCubit, UploadPatientVisitsState>(
+              listener: (context, state) {
+                if (state is UploadPatientVisitsSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      duration: Duration(milliseconds: 500),
+                      content: Text('Uploading Successful'),
+                    ),
+                  );
+                } else if (state is UploadPatientVisitsFailed) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      duration: Duration(milliseconds: 500),
+                      content: Text('uploading Failed'),
+                    ),
+                  );
                 }
               },
-              icon: const Icon(
-                Icons.info,
-                color: Colors.white,
-              ))
-        ],
-      ),
-      body: BlocListener<UpdatePatientStateCubit, UpdatePatientStateState>(
-        listener: (context, state) {
-          if (state is UpdatePatientStateSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Updating Successful'),
-              ),
-            );
-          } else if (state is UpdatePatientStateFaild) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Updating Failed'),
-              ),
-            );
-          }
-        },
-        child: BlocConsumer<UploadPatientVisitsCubit, UploadPatientVisitsState>(
-          listener: (context, state) {
-            if (state is UploadPatientVisitsSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Uploading Successful'),
-                ),
-              );
-            } else if (state is UploadPatientVisitsFailed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('uploading Failed'),
-                ),
-              );
-            }
-          },
-          builder: (context, state) {
-            if (state is UpdatingPatientState ||
-                state is UploadingPatientVisits) {
-              return Container(
-                color: Colors.black.withOpacity(0.5),
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            return PageView.builder(
-              controller: _pageController,
-              itemCount: widget.image.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentImageName = widget.image[index].imgName;
-                });
+            ),
+            BlocListener<UpdatePatientStateCubit, UpdatePatientStateState>(
+              listener: (context, state) {
+                if (state is UpdatePatientStateSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      duration: Duration(milliseconds: 500),
+                      content: Text('Updating Successful'),
+                    ),
+                  );
+                } else if (state is UpdatePatientStateFaild) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      duration: Duration(milliseconds: 500),
+                      content: Text('Updating Failed'),
+                    ),
+                  );
+                }
               },
-              itemBuilder: (context, index) {
-                return Center(
-                  child: Image.memory(widget.image[index].imgBase64),
-                );
-              },
-            );
-          },
-        ),
-      ),
-    );
+            ),
+          ],
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.image.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentImageName = widget.image[index].imgName;
+              });
+            },
+            itemBuilder: (context, index) {
+              return Center(
+                child: Image.memory(widget.image[index].imgBase64),
+              );
+            },
+          ),
+        ));
   }
 
   @override
@@ -156,19 +152,3 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
     super.dispose();
   }
 }
-
-
-// SELECT pv.Procedure_id,pp.Procedures_desc,pv.Procedure_Status,pv.Notes FROM Patients_Visits pv INNER JOIN Patients_Procedures pp ON pv.Procedure_id = pp.Procedure_id WHERE pv.Visit_Date = '$_currentImageName' AND pv.Patient_Id =${widget.patientId} 
-
-
-// SELECT pp.Procedure_id,pp.Procedure_Desc,pv.Patient_Id,pv.Procedure_id,pv.Procedure_Status,pv.Notes,pv.Visit_Date FROM Patients_Procedures pp FULL OUTER JOIN Patients_Visits pv ON pp.Procedure_id = pv.Procedure_id WHERE pv.Visit_Date = '$_currentImageName' AND pv.Patient_Id =${widget.patientId};
-
-
-//SELECT pp.Procedure_id,pp.Procedure_Desc,pv.Patient_Id,pv.Procedure_id,    pv.Procedure_Status,pv.Notes,pv.Visit_Date FROM Patients_Procedures pp LEFT JOIN    Patients_Visits pv ON pp.Procedure_id = pv.Procedure_id WHERE pv.Patient_Id =${widget.patientId} OR pv.Patient_Id IS NULL UNION pv.Procedure_id AS Procedure_id,NULL AS Procedure_Desc,pv.Patient_Id,    pv.Procedure_id,pv.Procedure_Status,pv.Notes,pv.Visit_Date FROM Patients_Visits pv WHERE pv.Patient_Id =${widget.patientId} AND NOT EXISTS (SELECT 1 FROM Patients_Procedures pp WHERE pp.Procedure_id = pv.Procedure_id);
-
-
-
-//SELECT pp.Procedure_id AS Procedure_id,pp.Procedure_Desc,pv.Patient_Id,    pv.Procedure_id AS Visit_Procedure_Id,pv.Procedure_Status,pv.Notes,    pv.Visit_Date FROM Patients_Procedures pp LEFT JOIN Patients_Visits pv ON    pp.Procedure_id = pv.Procedure_id WHERE (pv.Patient_Id = ${widget.patientId} AND pv.Visit_Date = '$_currentImageName') OR pv.Patient_Id IS NULL UNION SELECT     pv.Procedure_id AS Procedure_id,NULL AS Procedure_Desc,pv.Patient_Id,    pv.Procedure_id AS Visit_Procedure_Id,pv.Procedure_Status,pv.Notes,    pv.Visit_Date FROM Patients_Visits pv WHERE pv.Patient_Id = ${widget.patientId}     AND pv.Visit_Date = '$_currentImageName' AND NOT EXISTS (SELECT 1 FROM Patients_Procedures pp WHERE pp.Procedure_id = pv.Procedure_id);
-
-
-// SELECT pp.Procedure_id AS Procedure_id,pp.Procedure_Desc,pv.Patient_Id,pv.Visit_Date,    pv.Procedure_Status,pv.Notes FROM Patients_Procedures pp LEFT JOIN Patients_Visits pv ON     pp.Procedure_id = pv.Procedure_id AND pv.Patient_Id = ${widget.patientId} AND pv.Visit_Date = '$_currentImageName' ORDER BY pp.Procedure_id;

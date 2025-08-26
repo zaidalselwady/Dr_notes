@@ -64,9 +64,10 @@ class _CustomPatientsListState extends State<CustomPatientsList> {
                   },
                   child: ListView.builder(
                     padding: EdgeInsets.all(width / 30),
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
+                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: false,
+                    cacheExtent: 250,
                     itemCount: widget.patients.length,
                     itemBuilder: (BuildContext context, int index) {
                       return AnimationConfiguration.staggeredList(

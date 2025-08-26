@@ -37,6 +37,14 @@ android {
             signingConfig = signingConfigs.debug
         }
     }
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def versionName = variant.versionName
+            def versionCode = variant.versionCode
+            // غيّر الاسم زي ما بدك
+            outputFileName = "Dr. Notes-v${versionName}.apk"
+        }
+    }
 }
 
 flutter {

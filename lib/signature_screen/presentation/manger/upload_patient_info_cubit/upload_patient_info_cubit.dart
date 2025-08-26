@@ -11,7 +11,7 @@ class UploadPatientInfoCubit extends Cubit<UploadPatientInfoState> {
   Future<void> uploadPatientInfo(PatientInfo childInfo) async {
     emit(UploadingPatientInfo());
     var response = await dataRepo.fetchWithSoapRequest("SProc_cmd",
-        "exec dbo.SProc_Patients_Info '${childInfo.name}' ,N'${childInfo.firstName}' ,N'${childInfo.midName}' ,N'${childInfo.lastName}' , '${childInfo.birthDate}' , '${childInfo.address}' , '${childInfo.phone}' , '${childInfo.email}' , '${childInfo.school}' , '${childInfo.motherName}'");
+        "exec dbo.SProc_Patients_Info '${childInfo.name}' ,N'${childInfo.firstName}' ,N'${childInfo.midName}' ,N'${childInfo.lastName}' , '${childInfo.birthDate}' ,N'${childInfo.address}' , '${childInfo.phone}' , '${childInfo.email}' , N'${childInfo.school}' , '${childInfo.motherName}'");
 
     response.fold((failure) {
       emit(UploadPatientInfoFaild(error: failure.errorMsg));

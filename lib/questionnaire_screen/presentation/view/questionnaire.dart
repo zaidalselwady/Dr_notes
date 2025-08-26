@@ -376,7 +376,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               // SCENARIO 2: Existing patient - update questionnaire
               if (_hasChanges()) {
                 String updateQuery = _buildUpdateQuery();
-                await updateCubit.updatePatient(updateQuery);
+                await updateCubit.updatePatient(updateQuery,true);
               } else {
                 // No changes, just go back
                 Navigator.pop(context);

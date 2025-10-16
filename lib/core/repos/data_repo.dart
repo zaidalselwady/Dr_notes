@@ -5,7 +5,8 @@ import '../errors/errors.dart';
 
 abstract class DataRepo {
   Future<Either<Failure, http.Response>> soapRequest(
-      {required String action,
+      {int? isSignature,
+      required String action,
       required String newName,
       required String currentFolder,
       required String filePath,

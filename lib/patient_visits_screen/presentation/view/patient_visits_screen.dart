@@ -1,23 +1,21 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hand_write_notes/canvas_screen/presentation/view/canvas_screen.dart';
-import 'package:hand_write_notes/get_files_cubit/cubit/get_files_cubit.dart';
 import 'package:hand_write_notes/information_screen/data/child_info_model.dart';
 import 'package:hand_write_notes/patient_visits_screen/presentation/manger/patient_questionnaire_cubit/cubit/patient_questionnaire_cubit.dart';
-import 'package:hand_write_notes/patients_visits_insert_cubit/cubit/upload_patient_visits_cubit.dart';
+import 'package:hand_write_notes/patient_visits_screen/presentation/view/visit_images.dart';
 import 'package:hand_write_notes/questionnaire_screen/presentation/view/questionnaire.dart';
 import 'package:hand_write_notes/show_info_screen/presentation/view/show_info_screen.dart';
 import 'package:intl/intl.dart';
-import '../../../core/failed_msg_screen_widget.dart';
 import '../../../core/repos/data_repo_impl.dart';
 import '../../../core/utils/api_service.dart';
-import '../../../get_proc_cubit/cubit/get_proc_cubit.dart';
 import '../../../login_screen/data/user_model.dart';
 import '../../../show_info_screen/presentation/manger/update_patient_info_cubit/cubit/update_patient_info_cubit.dart';
 import '../../../update_patient_state_cubit/cubit/update_patient_state_cubit.dart';
 import '../../data/image_model.dart';
-import 'widgets/full_screen_img_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PatientVisitsScreen extends StatefulWidget {
   const PatientVisitsScreen(
@@ -79,8 +77,6 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
   @override
   initState() {
     super.initState();
-    // Fetch images when the widget is initialized
-    context.read<GetFilesCubit>().getImages3("P${widget.patientId}");
   }
 
   @override
@@ -104,251 +100,21 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
             children: [
               // Always visible patient info card
               PatientInfoCard(
+                user: widget.user,
                 patientInfo: widget.patientsInfo,
                 medicalHistory: "",
                 age: age.toString(),
               ),
               if (widget.user.userName == "Dr")
                 Expanded(
-                  child: BlocConsumer<GetFilesCubit, GetFilesState>(
-                    listener: (context, state) {
-                      if (state is GetFilesSuccess) {
-                        // images = List<ImageModel>.from(state.images)
-                        //   ..sort((a, b) => b.imgName.compareTo(a.imgName));
-                        images = state.images;
-                        // Sort images
-                      }
-                    },
-                    builder: (context, state) {
-                      if (state is GetFilesSuccess) {
-                        if (images.isNotEmpty) {
-                          return RefreshIndicator(
-                            onRefresh: () async {
-                              context
-                                  .read<GetFilesCubit>()
-                                  .getImages3("P${widget.patientId}");
-                            },
-                            child: GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 4,
-                                mainAxisSpacing: 4,
-                              ),
-                              itemCount: images.length,
-                              itemBuilder: (context, index) {
-                                return Stack(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => viewImage(images, index),
-                                      child: Image.memory(
-                                        images[index].imgBase64,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return const Icon(Icons
-                                              .image_not_supported_rounded);
-                                        },
-                                      ),
-                                    ),
-                                    // الاسم فوق الصورة
-                                    Positioned(
-                                      top: 8, // المسافة من فوق
-                                      left: 8, // المسافة من الشمال
-                                      right: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 3),
-                                        color: Colors.black.withOpacity(
-                                            0.5), // خلفية شبه شفافة
-                                        child: Text(
-                                          images[index].imgName,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          );
-                        } else {
-                          debugPrint("");
-                          return WarningMsgScreen(
-                            onRefresh: () async {
-                              context
-                                  .read<GetFilesCubit>()
-                                  .getImages3("P${widget.patientId}");
-                            },
-                            state: state,
-                            msg: "No Visits",
-                          );
-                        }
-                      } else if (state is GetFilesFaild) {
-                        return WarningMsgScreen(
-                          onRefresh: () async {
-                            context
-                                .read<GetFilesCubit>()
-                                .getImages3("P${widget.patientId}");
-                          },
-                          state: state,
-                          msg: state.error,
-                        );
-                      } else {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-                    },
-                  ),
-                )
-
-              // Expanded(
-              //   child: BlocBuilder<GetFilesCubit, GetFilesState>(
-              //     builder: (context, state) {
-              //       if (state is GetFilesSuccess) {
-              //         if (state.images.isNotEmpty) {
-              //           return RefreshIndicator(
-              //             onRefresh: () async {
-              //               context
-              //                   .read<GetFilesCubit>()
-              //                   .getImages("P${widget.patientId}");
-              //             },
-              //             child: GridView.builder(
-              //               gridDelegate:
-              //                   const SliverGridDelegateWithFixedCrossAxisCount(
-              //                 crossAxisCount: 3,
-              //                 crossAxisSpacing: 4,
-              //                 mainAxisSpacing: 4,
-              //               ),
-              //               itemCount: state.images.length,
-              //               itemBuilder: (context, index) {
-              //                 return GestureDetector(
-              //                   onTap: () => viewImage(state.images, index),
-              //                   child: Image.memory(
-              //                     errorBuilder: (context, error, stackTrace) {
-              //                       return const Icon(
-              //                           Icons.image_not_supported_rounded);
-              //                     },
-              //                     state.images[index].imgBase64,
-              //                     fit: BoxFit.fill,
-              //                   ),
-              //                 );
-              //               },
-              //             ),
-              //           );
-              //         } else {
-              //           return WarningMsgScreen(
-              //             onRefresh: () async {
-              //               context
-              //                   .read<GetFilesCubit>()
-              //                   .getImages("P${widget.patientId}");
-              //             },
-              //             state: state,
-              //             msg: "No Visits",
-              //           );
-              //         }
-              //       } else if (state is GetFilesFaild) {
-              //         return WarningMsgScreen(
-              //           onRefresh: () async {
-              //             context
-              //                 .read<GetFilesCubit>()
-              //                 .getImages("P${widget.patientId}");
-              //           },
-              //           state: state,
-              //           msg: state.error,
-              //         );
-              //       } else {
-              //         return const Center(
-              //           child: CircularProgressIndicator(),
-              //         );
-              //       }
-              //     },
-              //   ),
-              // )
-              else
-                const Center(
-                    child: Text(
-                  "No access to this feature",
-                  style: TextStyle(fontSize: 20),
-                ))
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: widget.user.userName == "Dr"
-            ? () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (context) => UploadPatientVisitsCubit(
-                        DataRepoImpl(
-                          ApiService(
-                            Dio(),
-                          ),
-                        ),
-                      ),
-                      child: HandwritingScreen(
-                        patientId: widget.patientId,
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: StickyNote(
+                      patientId: widget.patientsInfo.patientId.toString(),
                     ),
                   ),
-                );
-                if (result == true) {
-                  context
-                      .read<GetFilesCubit>()
-                      .getImages3("P${widget.patientId}");
-                }
-              }
-            : null,
-        child: const Icon(Icons.create),
-      ),
-    );
-  }
-
-  void viewImage(List<ImageModel> imageList, int index) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MultiBlocProvider(
-          providers: [
-            BlocProvider<GetProcCubit>(
-                create: (context) => GetProcCubit(
-                      DataRepoImpl(ApiService(
-                        Dio(),
-                      )),
-                    )),
-            BlocProvider<UploadPatientVisitsCubit>(
-              create: (context) => UploadPatientVisitsCubit(
-                DataRepoImpl(
-                  ApiService(
-                    Dio(),
-                  ),
                 ),
-              ),
-            ),
-            BlocProvider<UpdatePatientStateCubit>(
-              create: (context) => UpdatePatientStateCubit(
-                DataRepoImpl(
-                  ApiService(
-                    Dio(),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          child: FullscreenImageScreen(
-            patientId: widget.patientId,
-            image: imageList,
-            initialIndex: index,
+            ],
           ),
         ),
       ),
@@ -358,6 +124,7 @@ class _PatientVisitsScreenState extends State<PatientVisitsScreen> {
 
 class PatientInfoCard extends StatelessWidget {
   final String age;
+  final User user;
   final String medicalHistory;
   final PatientInfo patientInfo;
   const PatientInfoCard({
@@ -365,12 +132,11 @@ class PatientInfoCard extends StatelessWidget {
     required this.age,
     required this.medicalHistory,
     required this.patientInfo,
+    required this.user,
   });
 
   @override
   Widget build(BuildContext context) {
-    var updateCubit = BlocProvider.of<UpdatePatientStateCubit>(context);
-
     return Card(
       elevation: 5,
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
@@ -394,13 +160,32 @@ class PatientInfoCard extends StatelessWidget {
               Row(
                 children: [
                   // Profile Picture
-                  CircleAvatar(
-                    backgroundColor: Colors.teal[800], // Background color
-                    radius: 40, // Adjust CircleAvatar size
-                    child: ClipOval(
-                      child: Image.asset(
-                        "assets/tooth.png",
-                        fit: BoxFit.contain, // Ensures the image fits well
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => BlocProvider(
+                                  create: (context) => UpdatePatientInfoCubit(
+                                    DataRepoImpl(
+                                      ApiService(
+                                        Dio(),
+                                      ),
+                                    ),
+                                  ),
+                                  child:
+                                      ShowInfoScreen(patientInfo: patientInfo),
+                                )),
+                      );
+                    },
+                    child: CircleAvatar(
+                      backgroundColor: Colors.teal[800], // Background color
+                      radius: 40, // Adjust CircleAvatar size
+                      child: ClipOval(
+                        child: Image.asset(
+                          "assets/tooth.png",
+                          fit: BoxFit.contain, // Ensures the image fits well
+                        ),
                       ),
                     ),
                   ),
@@ -497,52 +282,106 @@ class PatientInfoCard extends StatelessWidget {
                       );
                     },
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.edit,
-                      color: Color(0xFFDDA853),
-                      size: 30,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => BlocProvider(
-                                  create: (context) => UpdatePatientInfoCubit(
-                                    DataRepoImpl(
-                                      ApiService(
-                                        Dio(),
-                                      ),
-                                    ),
-                                  ),
-                                  child:
-                                      ShowInfoScreen(patientInfo: patientInfo),
-                                )),
-                      );
-                      // Handle view history action
+                  GestureDetector(
+                    behavior: HitTestBehavior
+                        .opaque, // 👈 هذا كمان مهم لتوسيع منطقة اللمس
+                    onTap: () {
+                      if (user.userName == "Dr") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                VisitImages(patientInfo: patientInfo),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("No access to this feature"),
+                          ),
+                        );
+                      }
                     },
-                  ),
-                ],
-              ),
-              const Divider(height: 30, thickness: 1),
-              // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      updateCubit.updatePatient(
-                          "UPDATE Patients_Info SET isOnClinic = 0 WHERE Patient_Id=${patientInfo.patientId}",true);
-                    },
-                    child: Text(
-                      "Finish visit",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red[800],
+                    child: Container(
+                      alignment: Alignment.center,
+                      width: 50,
+                      height: 50,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          //Icon(Icons.image, color: Colors.teal[300], size: 30),
+                          Positioned(
+                            right: 5,
+                            top: 5,
+                            child: Icon(Icons.image,
+                                color: Colors.teal[300], size: 30),
+                          ),
+                          Positioned(
+                            right: 10,
+                            top: 10,
+                            child: Icon(Icons.image,
+                                color: Colors.teal[600], size: 30),
+                          ),
+                          Positioned(
+                            right: 15,
+                            top: 15,
+                            child: Icon(Icons.image,
+                                color: Colors.teal[900], size: 30),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  )
+
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     if (user.userName == "Dr") {
+                  //       Navigator.push(
+                  //         context,
+                  //         MaterialPageRoute(
+                  //           builder: (context) => VisitImages(
+                  //             patientInfo: patientInfo,
+                  //           ),
+                  //         ),
+                  //       );
+                  //     } else {
+                  //       ScaffoldMessenger.of(context).showSnackBar(
+                  //         const SnackBar(
+                  //           content: Text(
+                  //             "No access to this feature",
+                  //           ),
+                  //         ),
+                  //       );
+                  //     }
+                  //   },
+                  //   child: SizedBox(
+                  //     height: 50,
+                  //     child: Stack(
+                  //       clipBehavior: Clip.none,
+                  //       children: [
+                  //         Icon(
+                  //           Icons.image,
+                  //           color: Colors.teal[300],
+                  //         ),
+                  //         Positioned(
+                  //             right: 5,
+                  //             top: 5,
+                  //             child: Icon(
+                  //               Icons.image,
+                  //               color: Colors.teal[600],
+                  //             )),
+                  //         Positioned(
+                  //             right: 10,
+                  //             top: 10,
+                  //             child: Icon(
+                  //               Icons.image,
+                  //               color: Colors.teal[900],
+                  //             )),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // )
                 ],
               ),
             ],
@@ -550,5 +389,355 @@ class PatientInfoCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class Stroke {
+  List<Offset> points;
+  double strokeWidth;
+  Color color;
+  bool isErased;
+
+  Stroke({
+    required this.points,
+    this.strokeWidth = 3.0,
+    this.color = Colors.black,
+    this.isErased = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'points': points.map((e) => {'x': e.dx, 'y': e.dy}).toList(),
+        'strokeWidth': strokeWidth,
+        'color': color.value,
+        'isErased': isErased,
+      };
+
+  factory Stroke.fromJson(Map<String, dynamic> json) {
+    return Stroke(
+      points:
+          (json['points'] as List).map((p) => Offset(p['x'], p['y'])).toList(),
+      strokeWidth: json['strokeWidth']?.toDouble() ?? 3.0,
+      color: Color(json['color'] ?? Colors.black.value),
+      isErased: json['isErased'] ?? false,
+    );
+  }
+
+  // Create a path from points for smoother drawing
+  Path get path {
+    final path = Path();
+    if (points.isEmpty) return path;
+
+    path.moveTo(points.first.dx, points.first.dy);
+
+    if (points.length == 1) {
+      // Single point - draw a small circle
+      path.addOval(
+          Rect.fromCircle(center: points.first, radius: strokeWidth / 2));
+    } else if (points.length == 2) {
+      // Two points - draw a line
+      path.lineTo(points.last.dx, points.last.dy);
+    } else {
+      // Multiple points - create smooth curve
+      for (int i = 1; i < points.length - 1; i++) {
+        final current = points[i];
+        final next = points[i + 1];
+        final controlPoint = Offset(
+          (current.dx + next.dx) / 2,
+          (current.dy + next.dy) / 2,
+        );
+        path.quadraticBezierTo(
+            current.dx, current.dy, controlPoint.dx, controlPoint.dy);
+      }
+      path.lineTo(points.last.dx, points.last.dy);
+    }
+
+    return path;
+  }
+
+  // Check if this stroke intersects with an eraser area
+  bool intersectsWithEraser(Offset eraserCenter, double eraserRadius) {
+    return points
+        .any((point) => (point - eraserCenter).distance <= eraserRadius);
+  }
+}
+
+enum DrawingMode { pen, eraser }
+
+class StickyNote extends StatefulWidget {
+  final String patientId;
+  const StickyNote({required this.patientId, super.key});
+
+  @override
+  State<StickyNote> createState() => _StickyNoteState();
+}
+
+class _StickyNoteState extends State<StickyNote> {
+  List<Stroke> strokes = [];
+  List<List<Stroke>> history = [];
+  DrawingMode currentMode = DrawingMode.pen;
+  Color selectedColor = Colors.black;
+  double selectedStrokeWidth = 3.0;
+  double eraserSize = 20.0;
+
+  Offset? currentEraserPosition;
+  bool isDrawing = false;
+
+  final GlobalKey _drawingAreaKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStrokes();
+  }
+
+  Future<void> _loadStrokes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('sticky_note_${widget.patientId}');
+    if (jsonString != null) {
+      final List decoded = jsonDecode(jsonString);
+      setState(() {
+        strokes = decoded.map((e) => Stroke.fromJson(e)).toList();
+        _saveToHistory();
+      });
+    }
+  }
+
+  Future<void> _saveStrokes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(strokes.map((e) => e.toJson()).toList());
+    await prefs.setString('sticky_note_${widget.patientId}', jsonString);
+  }
+
+  void _saveToHistory() {
+    history.add(List<Stroke>.from(strokes));
+    if (history.length > 20) {
+      // Limit history size
+      history.removeAt(0);
+    }
+  }
+
+  void _undo() {
+    if (history.length > 1) {
+      setState(() {
+        history.removeLast(); // Remove current state
+        strokes = List<Stroke>.from(history.last); // Restore previous state
+      });
+      _saveStrokes();
+    }
+  }
+
+  void _clearAll() {
+    _saveToHistory();
+    setState(() {
+      strokes.clear();
+    });
+    _saveStrokes();
+  }
+
+  Offset? _getLocalPosition(Offset globalPosition) {
+    final RenderBox? renderBox =
+        _drawingAreaKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      return renderBox.globalToLocal(globalPosition);
+    }
+    return null;
+  }
+
+  void _handlePanStart(DragStartDetails details) {
+    final localPosition = _getLocalPosition(details.globalPosition);
+    if (localPosition == null) return;
+
+    setState(() {
+      isDrawing = true;
+      if (currentMode == DrawingMode.pen) {
+        _saveToHistory();
+        strokes.add(Stroke(
+          points: [localPosition],
+          strokeWidth: selectedStrokeWidth,
+          color: selectedColor,
+        ));
+      } else {
+        currentEraserPosition = localPosition;
+      }
+    });
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    final localPosition = _getLocalPosition(details.globalPosition);
+    if (localPosition == null) return;
+
+    setState(() {
+      if (currentMode == DrawingMode.pen) {
+        if (strokes.isNotEmpty) {
+          strokes.last.points.add(localPosition);
+        }
+      } else {
+        currentEraserPosition = localPosition;
+        // Erase strokes that intersect with eraser
+        for (var stroke in strokes) {
+          if (!stroke.isErased &&
+              stroke.intersectsWithEraser(localPosition, eraserSize)) {
+            stroke.isErased = true;
+          }
+        }
+      }
+    });
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    setState(() {
+      isDrawing = false;
+      currentEraserPosition = null;
+      if (currentMode == DrawingMode.eraser) {
+        // Remove erased strokes
+        strokes.removeWhere((stroke) => stroke.isErased);
+      }
+    });
+    _saveStrokes();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          "Sticky Note",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.orange[800],
+          ),
+        ),
+        // Controls
+        Container(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              // Mode Toggle
+              ToggleButtons(
+                isSelected: [
+                  currentMode == DrawingMode.pen,
+                  currentMode == DrawingMode.eraser,
+                ],
+                onPressed: (index) {
+                  setState(() {
+                    currentMode =
+                        index == 0 ? DrawingMode.pen : DrawingMode.eraser;
+                  });
+                },
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(Icons.edit),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(Icons.cleaning_services),
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              IconButton(
+                icon: const Icon(Icons.clear_all),
+                onPressed: strokes.isNotEmpty ? _clearAll : null,
+              ),
+            ],
+          ),
+        ),
+
+        // Drawing area
+        Expanded(
+          child: Container(
+            key: _drawingAreaKey,
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.yellow[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange[300]!, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: GestureDetector(
+                onPanStart: _handlePanStart,
+                onPanUpdate: _handlePanUpdate,
+                onPanEnd: _handlePanEnd,
+                child: CustomPaint(
+                  painter: StickyNotePainter(
+                    strokes: strokes,
+                    eraserPosition: currentEraserPosition,
+                    eraserSize: eraserSize,
+                    showEraser: currentMode == DrawingMode.eraser,
+                  ),
+                  size: Size.infinite,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class StickyNotePainter extends CustomPainter {
+  final List<Stroke> strokes;
+  final Offset? eraserPosition;
+  final double eraserSize;
+  final bool showEraser;
+
+  StickyNotePainter({
+    required this.strokes,
+    this.eraserPosition,
+    required this.eraserSize,
+    required this.showEraser,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw all non-erased strokes
+    for (var stroke in strokes) {
+      if (!stroke.isErased) {
+        final paint = Paint()
+          ..color = stroke.color
+          ..strokeWidth = stroke.strokeWidth
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..style = PaintingStyle.stroke;
+
+        canvas.drawPath(stroke.path, paint);
+      }
+    }
+
+    // Draw eraser cursor
+    if (showEraser && eraserPosition != null) {
+      final eraserPaint = Paint()
+        ..color = Colors.red.withOpacity(0.3)
+        ..style = PaintingStyle.fill;
+
+      final eraserBorderPaint = Paint()
+        ..color = Colors.red
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke;
+
+      canvas.drawCircle(eraserPosition!, eraserSize, eraserPaint);
+      canvas.drawCircle(eraserPosition!, eraserSize, eraserBorderPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant StickyNotePainter oldDelegate) {
+    return strokes != oldDelegate.strokes ||
+        eraserPosition != oldDelegate.eraserPosition ||
+        eraserSize != oldDelegate.eraserSize ||
+        showEraser != oldDelegate.showEraser;
   }
 }

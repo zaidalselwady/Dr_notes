@@ -10,8 +10,9 @@ class CanvasLoading extends ConvertCanvasB64State {}
 class CanvasConversionSuccess extends ConvertCanvasB64State {
   final String base64Image;
   final List<dynamic> procedures;
+  final String strokesJson;
 
-  CanvasConversionSuccess(this.base64Image, this.procedures);
+  CanvasConversionSuccess(this.base64Image, this.procedures, this.strokesJson);
 }
 
 class CanvasConversionError extends ConvertCanvasB64State {

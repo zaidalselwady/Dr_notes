@@ -12,6 +12,7 @@ class ApiService {
   Future<http.Response> getSoapRequest(
       {required String action,
       //required String password,
+      int isSignature = 0,
       required String newName,
       required String currentFolder,
       required String filePath,
@@ -34,6 +35,7 @@ class ApiService {
       <NewFolder>$newName</NewFolder>
       <FilePath>$filePath</FilePath>
       <image_Base64String>$imageBytes</image_Base64String>
+      <is_Signture>$isSignature</is_Signture>
       <SQlStr>$sqlStr</SQlStr>
     </$action>
   </soap:Body>

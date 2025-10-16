@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:hand_write_notes/information_screen/data/child_info_model.dart';
 import 'package:hand_write_notes/information_screen/presentation/view/widgets/colorful_background.dart';
 import 'package:hand_write_notes/signature_screen/presentation/view/signature_screen.dart';
+import '../../../get_files_cubit/cubit/get_files_cubit.dart';
 import '../../../update_patient_state_cubit/cubit/update_patient_state_cubit.dart';
 import '../../data/questionnaire_model.dart';
 
@@ -14,7 +17,7 @@ class QuestionnaireScreen extends StatefulWidget {
     required this.isNavigateFromVisitScreen,
     required this.answers,
   });
-  
+
   final PatientInfo patientInfo;
   final bool isNavigateFromVisitScreen;
   final List<QuestionnaireModel> answers;
@@ -52,45 +55,48 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     super.initState();
     _initializeQuestionnaire();
     _initializeNoteControllers();
+    context
+        .read<GetFilesCubit>()
+        .getImages3("P${widget.patientInfo.patientId}", 1, false);
   }
 
   void _initializeQuestionnaire() {
     if (widget.isNavigateFromVisitScreen && widget.answers.isNotEmpty) {
       // SCENARIO 2: Coming from visit screen with existing data
-      questionnaire = widget.answers.map((answer) => 
-        QuestionnaireModel(
-          question: answer.question,
-          answer: answer.answer,
-          note: answer.note,
-        )
-      ).toList();
-      
+      questionnaire = widget.answers
+          .map((answer) => QuestionnaireModel(
+                question: answer.question,
+                answer: answer.answer,
+                note: answer.note,
+              ))
+          .toList();
+
       // Create copy for comparison
-      copyQuestionnaireList = widget.answers.map((answer) => 
-        QuestionnaireModel(
-          question: answer.question,
-          answer: answer.answer,
-          note: answer.note,
-        )
-      ).toList();
+      copyQuestionnaireList = widget.answers
+          .map((answer) => QuestionnaireModel(
+                question: answer.question,
+                answer: answer.answer,
+                note: answer.note,
+              ))
+          .toList();
     } else {
       // SCENARIO 1: New patient - empty questionnaire with default questions
-      questionnaire = _defaultQuestions.map((question) => 
-        QuestionnaireModel(
-          question: question,
-          answer: null,
-          note: null,
-        )
-      ).toList();
-      
+      questionnaire = _defaultQuestions
+          .map((question) => QuestionnaireModel(
+                question: question,
+                answer: null,
+                note: null,
+              ))
+          .toList();
+
       // Create empty copy for comparison
-      copyQuestionnaireList = _defaultQuestions.map((question) => 
-        QuestionnaireModel(
-          question: question,
-          answer: null,
-          note: null,
-        )
-      ).toList();
+      copyQuestionnaireList = _defaultQuestions
+          .map((question) => QuestionnaireModel(
+                question: question,
+                answer: null,
+                note: null,
+              ))
+          .toList();
     }
   }
 
@@ -98,12 +104,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     // Initialize controllers for each question
     for (int i = 0; i < questionnaire.length; i++) {
       final controller = TextEditingController();
-      
+
       // If there's an existing note, set it in the controller
       if (questionnaire[i].note != null && questionnaire[i].note!.isNotEmpty) {
         controller.text = questionnaire[i].note!;
       }
-      
+
       _noteControllers.add(controller);
     }
   }
@@ -143,7 +149,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               onPressed: () {
                 setState(() {
                   final noteText = _noteControllers[questionIndex].text.trim();
-                  questionnaire[questionIndex].note = noteText.isEmpty ? null : noteText;
+                  questionnaire[questionIndex].note =
+                      noteText.isEmpty ? null : noteText;
                 });
                 Navigator.of(context).pop();
               },
@@ -285,17 +292,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     var updateCubit = BlocProvider.of<UpdatePatientStateCubit>(context);
-    
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         clipBehavior: Clip.none,
-        title: Text(
-          widget.isNavigateFromVisitScreen 
-            ? 'Update Health Questionnaire' 
-            : 'New Health Questionnaire'
-        ),
+        title: Text(widget.isNavigateFromVisitScreen
+            ? 'Update Health Questionnaire'
+            : 'New Health Questionnaire'),
       ),
       body: Column(
         children: [
@@ -305,35 +310,74 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: widget.isNavigateFromVisitScreen ? Colors.blue[50] : Colors.green[50],
+              color: widget.isNavigateFromVisitScreen
+                  ? Colors.blue[50]
+                  : Colors.green[50],
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: widget.isNavigateFromVisitScreen ? Colors.blue[200]! : Colors.green[200]!,
+                color: widget.isNavigateFromVisitScreen
+                    ? Colors.blue[200]!
+                    : Colors.green[200]!,
               ),
             ),
             child: Text(
               widget.isNavigateFromVisitScreen
-                ? 'Review and update the existing questionnaire responses and notes.'
-                : 'Please answer all questions. Add notes for any "Yes" responses if needed.',
+                  ? 'Review and update the existing questionnaire responses and notes.'
+                  : 'Please answer all questions. Add notes for any "Yes" responses if needed.',
               style: TextStyle(
-                color: widget.isNavigateFromVisitScreen ? Colors.blue[700] : Colors.green[700],
+                color: widget.isNavigateFromVisitScreen
+                    ? Colors.blue[700]
+                    : Colors.green[700],
                 fontSize: 14,
               ),
             ),
           ),
-          
+
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 80), // Space for FAB
-              itemCount: questionnaire.length,
-              itemBuilder: (context, index) {
-                return _buildQuestionItem(index);
-              },
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 80),
+              children: [
+                ...List.generate(
+                    questionnaire.length, (index) => _buildQuestionItem(index)),
+                const SizedBox(height: 16),
+                if (widget.isNavigateFromVisitScreen)
+                  BlocBuilder<GetFilesCubit, GetFilesState>(
+                    builder: (context, state) {
+                      if (state is GetFilesFaild) {
+                        return Center(
+                          child: Text(state.error,
+                              style: const TextStyle(color: Colors.red)),
+                        );
+                      } else if (state is GetFilesSuccess) {
+                        if (state.images.isNotEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              children: [
+                                const Text('Signature',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Image.memory(state.images.first.imgBase64!),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          );
+                        } else {
+                          return const Center(child: Text('No images found.'));
+                        }
+                      } else {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                    },
+                  ),
+              ],
             ),
           ),
         ],
       ),
-      floatingActionButton: BlocListener<UpdatePatientStateCubit, UpdatePatientStateState>(
+      floatingActionButton:
+          BlocListener<UpdatePatientStateCubit, UpdatePatientStateState>(
         listener: (context, state) {
           if (state is UpdatePatientStateSuccess) {
             Navigator.pop(context, true); // Return true to indicate success
@@ -376,7 +420,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               // SCENARIO 2: Existing patient - update questionnaire
               if (_hasChanges()) {
                 String updateQuery = _buildUpdateQuery();
-                await updateCubit.updatePatient(updateQuery,true);
+                await updateCubit.updatePatient(updateQuery, true);
               } else {
                 // No changes, just go back
                 Navigator.pop(context);
@@ -389,12 +433,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               }
             }
           },
-          icon: Icon(
-            widget.isNavigateFromVisitScreen ? Icons.save : Icons.navigate_next_outlined
-          ),
+          icon: Icon(widget.isNavigateFromVisitScreen
+              ? Icons.save
+              : Icons.navigate_next_outlined),
           label: Text(
-            widget.isNavigateFromVisitScreen ? 'Save Changes' : 'Continue'
-          ),
+              widget.isNavigateFromVisitScreen ? 'Save Changes' : 'Continue'),
         ),
       ),
     );
@@ -406,16 +449,20 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     for (int i = 0; i < questionnaire.length; i++) {
       final questionNum = i + 1;
       final question = questionnaire[i];
-      
+
       // Add answer update
       final answer = question.answer == null
           ? "NULL"
-          : question.answer! ? "1" : "0";
+          : question.answer!
+              ? "1"
+              : "0";
       updates.add('Q$questionNum = $answer');
 
       // Add note update
       String noteValue;
-      if (question.answer == true && question.note != null && question.note!.isNotEmpty) {
+      if (question.answer == true &&
+          question.note != null &&
+          question.note!.isNotEmpty) {
         final escapedNote = question.note!.replaceAll("'", "''");
         noteValue = "'$escapedNote'";
       } else {
@@ -435,27 +482,16 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       if (questionnaire[i].answer != copyQuestionnaireList[i].answer) {
         return true;
       }
-      
+
       // Check if note changed
       if (questionnaire[i].note != copyQuestionnaireList[i].note) {
         return true;
       }
     }
-    
+
     return false;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 // class QuestionnaireScreen extends StatefulWidget {
 //   const QuestionnaireScreen(

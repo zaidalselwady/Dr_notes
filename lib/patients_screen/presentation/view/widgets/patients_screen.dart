@@ -11,8 +11,7 @@ import '../../manger/get_patients_cubit/cubit/get_patients_cubit.dart';
 import 'custom_patients_list.dart';
 
 class Patients extends StatefulWidget {
-  const Patients({super.key, required this.sqlStr, required this.icon});
-  final String sqlStr;
+  const Patients({super.key, required this.icon});
   final Widget icon;
 
   @override

@@ -13,7 +13,8 @@ class DataRepoImpl implements DataRepo {
 
   @override
   Future<Either<Failure, http.Response>> soapRequest(
-      {required String action,
+      {int? isSignature,
+      required String action,
       required String newName,
       required String currentFolder,
       required String filePath,
@@ -21,6 +22,7 @@ class DataRepoImpl implements DataRepo {
       required String sqlStr}) async {
     try {
       var data = await apiService.getSoapRequest(
+          isSignature: isSignature ?? 0,
           action: action,
           //password: "OptimalPass",
           newName: newName,
@@ -56,4 +58,3 @@ class DataRepoImpl implements DataRepo {
     }
   }
 }
-

@@ -34,6 +34,8 @@ class _CustomPatientsListState extends State<CustomPatientsList> {
   Widget build(BuildContext context) {
     var getPatientsCubit = BlocProvider.of<GetPatientsCubit>(context);
     final width = MediaQuery.of(context).size.width;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Column(children: [
       Expanded(
         child: RefreshIndicator(
@@ -62,34 +64,57 @@ class _CustomPatientsListState extends State<CustomPatientsList> {
                       // });
                     }
                   },
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(width / 30),
-                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                    addAutomaticKeepAlives: false,
-                    addRepaintBoundaries: false,
-                    cacheExtent: 250,
-                    itemCount: widget.patients.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return AnimationConfiguration.staggeredList(
-                        position: index,
-                        delay: const Duration(milliseconds: 100),
-                        child: SlideAnimation(
-                          duration: const Duration(milliseconds: 2500),
-                          curve: Curves.fastLinearToSlowEaseIn,
-                          horizontalOffset: 30,
-                          verticalOffset: 300.0,
-                          child: FlipAnimation(
-                            duration: const Duration(milliseconds: 3000),
-                            curve: Curves.fastLinearToSlowEaseIn,
-                            flipAxis: FlipAxis.y,
-                            child: PatientCard(
-                              patientsInfo: widget.patients[index],
-                            ),
+                  child: isLandscape
+                      ? GridView.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithMaxCrossAxisExtent(
+                            mainAxisExtent: MediaQuery.of(context).size.height *
+                                    0.25,
+                            maxCrossAxisExtent:
+                                MediaQuery.of(context).size.width *
+                                    0.5, // عمودين لما يكون landscape
+                            childAspectRatio: 5 / 2,
                           ),
-                        ),
-                      );
-                    },
-                  )),
+                          itemCount: widget.patients.length,
+                          itemBuilder: (context, index) {
+                            return PatientCard(
+                              patientsInfo: widget.patients[index],
+                              isInClinic: !widget.isAll,
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  width > 600 ? width * 0.1 : width * 0.03),
+                          physics: const BouncingScrollPhysics(
+                              parent: AlwaysScrollableScrollPhysics()),
+                          addAutomaticKeepAlives: false,
+                          addRepaintBoundaries: false,
+                          cacheExtent: 250,
+                          itemCount: widget.patients.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return AnimationConfiguration.staggeredList(
+                              position: index,
+                              delay: const Duration(milliseconds: 100),
+                              child: SlideAnimation(
+                                duration: const Duration(milliseconds: 2500),
+                                curve: Curves.fastLinearToSlowEaseIn,
+                                horizontalOffset: 30,
+                                verticalOffset: 300.0,
+                                child: FlipAnimation(
+                                  duration: const Duration(milliseconds: 3000),
+                                  curve: Curves.fastLinearToSlowEaseIn,
+                                  flipAxis: FlipAxis.y,
+                                  child: PatientCard(
+                                    patientsInfo: widget.patients[index],
+                                    isInClinic: !widget.isAll,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        )),
             )),
       ),
     ]);

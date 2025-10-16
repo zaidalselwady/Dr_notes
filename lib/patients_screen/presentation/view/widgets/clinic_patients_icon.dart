@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 class OnlineIcon extends StatelessWidget {
-  const OnlineIcon({super.key, required this.onTap});
-  final Function() onTap;
+  const OnlineIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
       child: Stack(
         clipBehavior: Clip.none,
         children: [

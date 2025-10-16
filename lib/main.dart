@@ -20,9 +20,12 @@ import 'package:hand_write_notes/core/repos/data_repo_impl.dart';
 import 'package:hand_write_notes/core/utils/api_service.dart';
 import 'convert_canvas_B64_cubit/cubit/convert_canvas_b64_cubit.dart';
 import 'create_folder_cubit/cubit/create_folder_cubit.dart';
+import 'get_proc_cubit/cubit/get_proc_cubit.dart';
 import 'login_screen/data/user_model.dart';
 import 'patients_screen/presentation/manger/get_patients_cubit/cubit/get_patients_cubit.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'patients_visits_insert_cubit/cubit/upload_patient_visits_cubit.dart';
 
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -50,7 +53,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    
+
     // Add observer to monitor app lifecycle
     WidgetsBinding.instance.addObserver(this);
   }
@@ -64,6 +67,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.inactive) {
+    } else if (state == AppLifecycleState.paused) {
+    } else if (state == AppLifecycleState.detached) {
+      _clearCache();
+    }
+  }
+
   // Function to clear cache
   Future<void> _clearCache() async {
     try {
@@ -73,18 +86,27 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      // App is going to be closed or disposed, clear the cache
-      _clearCache();
-    }
-    super.didChangeAppLifecycleState(state);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider(
+          create: (context) => UploadPatientVisitsCubit(
+            DataRepoImpl(
+              ApiService(
+                Dio(),
+              ),
+            ),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => GetProcCubit(
+            DataRepoImpl(
+              ApiService(
+                Dio(),
+              ),
+            ),
+          ),
+        ),
         BlocProvider(
           create: (context) => UpdateCubit(UpdateService()),
         ),
@@ -214,8 +236,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ),
             useMaterial3: true,
           ),
-          home: 
-          FutureBuilder<User?>(
+          home: FutureBuilder<User?>(
             future: BlocProvider.of<SaveUserLocallyCubit>(context).getUser(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {

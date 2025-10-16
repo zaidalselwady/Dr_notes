@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:hand_write_notes/canvas_screen/presentation/view/proc_update_screen.dart';
 import 'package:hand_write_notes/patients_screen/presentation/view/all_patients_screen.dart';
 import 'package:hand_write_notes/patients_screen/presentation/view/patients_in_clinic_screen.dart';
 import 'package:open_file/open_file.dart';
@@ -15,6 +16,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../canvas_screen/presentation/view/widgets/proc_dialog.dart';
 import '../../../change_password_screen.dart';
 import '../../../core/repos/data_repo_impl.dart';
 import '../../../core/utils/api_service.dart';
@@ -157,12 +159,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 30),
                     Expanded(
                       child: GridView(
+                        physics: const BouncingScrollPhysics(),
                         gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 20,
-                          mainAxisSpacing: 20,
-                          childAspectRatio: 1.0,
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 300, // أقصى عرض لكل عنصر
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1,
                         ),
                         children: [
                           DashboardButton(
@@ -204,50 +207,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           ),
-                          DashboardButton(
-                              isDoctor: user?.userName == "Dr" ? true : false,
-                              imageName: "report.png",
-                              label: 'Reports',
-                              onTap: () {
-                                if (user?.userName == "Dr") {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          MultiBlocProvider(providers: [
-                                        BlocProvider(
-                                          create: (context) => GetProcCubit(
-                                            DataRepoImpl(
-                                              ApiService(
-                                                Dio(),
-                                              ),
+                          user?.userName == "Dr"
+                              ? DashboardButton(
+                                  isDoctor:
+                                      user?.userName == "Dr" ? true : false,
+                                  imageName: "report.png",
+                                  label: 'Reports',
+                                  onTap: () {
+                                    if (user?.userName == "Dr") {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              MultiBlocProvider(providers: [
+                                            BlocProvider(
+                                              create: (context) => GetProcCubit(
+                                                DataRepoImpl(
+                                                  ApiService(
+                                                    Dio(),
+                                                  ),
+                                                ),
+                                              )..fetchPatientsWithSoapRequest(
+                                                  "SELECT pp.*,mp.Main_Procedure_Desc FROM Patients_Procedures pp INNER JOIN    Patients_Main_Procedures mp ON pp.Main_procedure_Id = mp.Main_procedure_Id"),
                                             ),
-                                          )..fetchPatientsWithSoapRequest(
-                                              "SELECT pp.*,mp.Main_Procedure_Desc FROM Patients_Procedures pp INNER JOIN    Patients_Main_Procedures mp ON pp.Main_procedure_Id = mp.Main_procedure_Id"),
+                                            BlocProvider(
+                                              create: (context) =>
+                                                  GetSearchFields(
+                                                DataRepoImpl(
+                                                  ApiService(
+                                                    Dio(),
+                                                  ),
+                                                ),
+                                              )..fetchPatientsWithSoapRequest(
+                                                      "SELECT * FROM Patients_Search_Fields"),
+                                            )
+                                          ], child: const ReportingScreen()),
                                         ),
-                                        BlocProvider(
-                                          create: (context) => GetSearchFields(
-                                            DataRepoImpl(
-                                              ApiService(
-                                                Dio(),
-                                              ),
-                                            ),
-                                          )..fetchPatientsWithSoapRequest(
-                                              "SELECT * FROM Patients_Search_Fields"),
-                                        )
-                                      ], child: const ReportingScreen()),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "No access to this feature",
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "No access to this feature",
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  })
+                              : Container(),
+                          user?.userName == "Dr"
+                              ? DashboardButton(
+                                  isDoctor: true,
+                                  imageName: "tooth.png",
+                                  label: 'Procedures',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ProcedureSelectionScreen(),
                                       ),
-                                    ),
-                                  );
-                                }
-                              })
+                                    );
+                                  },
+                                )
+                              : Container(),
                         ],
                       ),
                     ),
@@ -378,23 +402,24 @@ class _CustomDrawerState extends State<CustomDrawer> {
                           ),
                         ),
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.password),
-                        title: const Text('Change password'),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BlocProvider(
-                                create: (context) => UpdatePatientStateCubit(
-                                    DataRepoImpl(ApiService(Dio()))),
-                                child: ChangePasswordScreen(),
+                      if (state.user.userName == "Dr")
+                        ListTile(
+                          leading: const Icon(Icons.password),
+                          title: const Text('Change password'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BlocProvider(
+                                  create: (context) => UpdatePatientStateCubit(
+                                      DataRepoImpl(ApiService(Dio()))),
+                                  child: ChangePasswordScreen(),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                      const Divider(),
+                            );
+                          },
+                        ),
+                      if (state.user.userName == "Dr") const Divider(),
                       ListTile(
                         leading: const Icon(Icons.exit_to_app),
                         title: const Text('Logout'),
@@ -499,49 +524,34 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         ),
                       ),
                       const Divider(),
-                      ListTile(
-                        enabled: state.user.userName == "Dr",
-                        leading: const Icon(Icons.settings),
-                        title: const Text('Settings'),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
+                      if (state.user.userName == "Dr")
+                        ListTile(
+                          leading: const Icon(Icons.settings),
+                          title: const Text('Settings'),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ),
                           ),
                         ),
-                      ),
-                      const Divider(),
-                      ListTile(
-                        leading: const Icon(Icons.delete_forever),
-                        title: const Text('Clear Cache & Restart App'),
-                        onTap: () => _clearCache().then((_) {
-                          Restart.restartApp();
-                        }),
-                      ),
-                      // const Divider(),
+                      if (state.user.userName == "Dr") const Divider(),
+                      if (state.user.userName == "Dr")
+                        ListTile(
+                            leading: const Icon(Icons.info),
+                            title: const Text('Procedure Management'),
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ProcedureManagementScreen(),
+                                ))),
                       // ListTile(
-                      //   leading: const Icon(Icons.info),
-                      //   title: const Text('About'),
-                      //   onTap: () => showAboutDialog(
-                      //     context: context,
-                      //     applicationIcon: Image.asset(
-                      //       'assets/logo.png',
-                      //       width: 50,
-                      //       height: 50,
-                      //     ),
-                      //     applicationName: 'HandWrite Notes',
-                      //     applicationVersion: version,
-                      //     applicationLegalese:
-                      //         '© 2024 HandWrite Notes. All rights reserved.',
-                      //     children: [
-                      //       const SizedBox(height: 10),
-                      //       const Text(
-                      //           'This app is designed to help doctors and secretaries manage patient information and visits efficiently.'),
-                      //       const SizedBox(height: 10),
-                      //       const Text(
-                      //           'Developed by Optimal Software Solutions.'),
-                      //     ],
-                      //   ),
+                      //   leading: const Icon(Icons.delete_forever),
+                      //   title: const Text('Clear Cache & Restart App'),
+                      //   onTap: () => _clearCache().then((_) {
+                      //     Restart.restartApp();
+                      //   }),
                       // ),
                     ],
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class DecoratedTextField extends StatefulWidget {
   const DecoratedTextField({
@@ -11,6 +12,7 @@ class DecoratedTextField extends StatefulWidget {
     this.onTap,
     this.readOnly = false,
     this.validator,
+    this.inputFormatters,
   });
   final TextEditingController controller;
   final TextInputType keyboardType;
@@ -18,6 +20,7 @@ class DecoratedTextField extends StatefulWidget {
   final Icon prefixIcon;
   final bool isPassword;
   final VoidCallback? onTap;
+  final List<TextInputFormatter>? inputFormatters;
   final bool readOnly;
   final String? Function(String?)? validator;
 
@@ -35,6 +38,7 @@ class _DecoratedTextFieldState extends State<DecoratedTextField> {
       padding: EdgeInsets.symmetric(
           horizontal: width * 0.05, vertical: height * 0.005),
       child: TextFormField(
+        inputFormatters: widget.inputFormatters,
         maxLength: widget.keyboardType == TextInputType.phone ? 10 : null,
         readOnly: widget.readOnly,
         onTap: widget.onTap,

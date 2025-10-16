@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hand_write_notes/get_proc_cubit/cubit/get_proc_cubit.dart';
 import 'package:hand_write_notes/get_report_result_cubit/cubit/get_generated_report_result_cubit.dart';
@@ -10,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'core/date_format_service.dart';
 import 'core/repos/data_repo_impl.dart';
 import 'core/utils/api_service.dart';
+import 'information_screen/presentation/view/info.dart';
 import 'search_fields_model.dart';
 import 'settings.dart';
 
@@ -53,120 +55,16 @@ class _ReportingScreenState extends State<ReportingScreen> {
     3: "75%",
     4: "100%"
   };
-  // String buildDynamicSqlQuery(
-  //     Map<String, dynamic> criteria,
-  //     String baseQuery,
-  //     List<String?> groupByFields,
-  //     List<int> selectedFields,
-  //     Map<int, Map> fieldsMap) {
-  //   String sqlStr = baseQuery;
-  //   List<String> conditions = [];
-  //   // Add visit date range condition
-  //   if (criteria.containsKey('Visit Date From') &&
-  //       criteria.containsKey('Visit Date To')) {
-  //     if (criteria['Visit Date From'] != null &&
-  //         criteria['Visit Date To'] != null &&
-  //         criteria['Visit Date From']!.isNotEmpty &&
-  //         criteria['Visit Date To']!.isNotEmpty) {
-  //       conditions.add(
-  //           "Visit_Date BETWEEN '${criteria['Visit Date From']}' AND '${criteria['Visit Date To']}'");
-  //     } else if (criteria['Visit Date From'] != null &&
-  //         criteria['Visit Date From']!.isNotEmpt) {
-  //       conditions.add("Visit_Date >= '${criteria['Visit Date From']}'");
-  //     } else {
-  //       conditions.add("Visit_Date <= '${criteria['Visit Date To']}'");
-  //     }
-  //   }
-  //   if (criteria.containsKey('Birth Date') &&
-  //       criteria['Birth Date']!.isNotEmpty &&
-  //       criteria['Birth Date'] != null) {
-  //     String birthDate = criteria['Birth Date'];
-  //     conditions.add("birthDate LIKE '$birthDate'");
-  //   }
-  //   // Add procedures condition
-  //   if (criteria.containsKey('Procedures') &&
-  //       (criteria['Procedures'] as List).isNotEmpty) {
-  //     String procedures = (criteria['Procedures'] as List).join(", ");
-  //     conditions.add("Procedure_id IN ($procedures)");
-  //   }
-  //   // Add procedure statuses condition
-  //   if (criteria.containsKey('Procedure Statuses') &&
-  //       (criteria['Procedure Statuses'] as List).isNotEmpty) {
-  //     String statuses = (criteria['Procedure Statuses'] as List).join(", ");
-  //     conditions.add("Procedure_Status IN ($statuses)");
-  //   }
-  //   // Add notes condition
-  //   if (criteria.containsKey('Notes') &&
-  //       (criteria['Notes'] as String).isNotEmpty) {
-  //     String notes = criteria['Notes'];
-  //     conditions.add("Notes LIKE '%$notes%'");
-  //   }
-  //   // Append conditions to the base SQL query
-  //   if (conditions.isNotEmpty) {
-  //     sqlStr += " WHERE ${conditions.join(" AND ")}";
-  //   }
-  //   if (groupByFields.isNotEmpty) {
-  //     sqlStr += " GROUP BY ${groupByFields.join(", ")}";
-  //   }
-  //   return sqlStr;
-  // }
 
-  String buildDynamicSqlQuery(
-    Map<String, dynamic> criteria,
-    String baseQuery,
-    List<String?> groupByFields,
-  ) {
-    String sqlStr = baseQuery;
-    List<String> conditions = [];
-    // Add visit date range condition
-    if (criteria.containsKey('Visit Date From') &&
-        criteria.containsKey('Visit Date To')) {
-      if (criteria['Visit Date From'] != null &&
-          criteria['Visit Date To'] != null &&
-          criteria['Visit Date From']!.isNotEmpty &&
-          criteria['Visit Date To']!.isNotEmpty) {
-        conditions.add(
-            "Visit_Date BETWEEN '${criteria['Visit Date From']}' AND '${criteria['Visit Date To']}'");
-      }
-      if (criteria['Visit Date From']?.isNotEmpty ?? false) {
-        conditions.add("Visit_Date >= '${criteria['Visit Date From']}'");
-      }
-      if (criteria['Visit Date To']?.isNotEmpty ?? false) {
-        conditions.add("Visit_Date <= '${criteria['Visit Date To']}'");
-      }
+// Helper function لتحويل التاريخ للنمط SQL الصحيح
+  String formatForSql(String date) {
+    // نفترض أن التاريخ بالصيغة dd-MM-yyyy
+    // SQL Server يفضل yyyy-MM-dd
+    final parts = date.split('-'); // ['17','09','2025']
+    if (parts.length == 3) {
+      return '${parts[2]}-${parts[1]}-${parts[0]}'; // '2025-09-17'
     }
-    if (criteria.containsKey('Birth Date') &&
-        criteria['Birth Date']!.isNotEmpty &&
-        criteria['Birth Date'] != null) {
-      String birthDate = criteria['Birth Date'];
-      conditions.add("birthDate LIKE '$birthDate'");
-    }
-    // Add procedures condition
-    if (criteria.containsKey('Procedures') &&
-        (criteria['Procedures'] as List).isNotEmpty) {
-      String procedures = (criteria['Procedures'] as List).join(", ");
-      conditions.add("Procedure_id IN ($procedures)");
-    }
-    // Add procedure statuses condition
-    if (criteria.containsKey('Procedure Statuses') &&
-        (criteria['Procedure Statuses'] as List).isNotEmpty) {
-      String statuses = (criteria['Procedure Statuses'] as List).join(", ");
-      conditions.add("Procedure_Status IN ($statuses)");
-    }
-    // Add notes condition
-    if (criteria.containsKey('Notes') &&
-        (criteria['Notes'] as String).isNotEmpty) {
-      String notes = criteria['Notes'];
-      conditions.add("Notes LIKE '%$notes%'");
-    }
-    // Append conditions to the base SQL query
-    if (conditions.isNotEmpty) {
-      sqlStr += " WHERE ${conditions.join(" AND ")}";
-    }
-    if (groupByFields.isNotEmpty) {
-      sqlStr += " GROUP BY ${groupByFields.join(", ")}";
-    }
-    return sqlStr;
+    return date;
   }
 
   String buildDynamicSqlQuery1(Map<String, dynamic> criteria, String baseQuery,
@@ -189,20 +87,34 @@ class _ReportingScreenState extends State<ReportingScreen> {
     }
 
     // ✅ Handle Visit Date conditions properly
-    if (criteria['Visit Date From']?.isNotEmpty ?? false) {
-      if (criteria['Visit Date To']?.isEmpty ?? false) {
-        conditions.add("Visit_Date >= '${criteria['Visit Date From']}'");
-      }
-    }
-    if (criteria['Visit Date To']?.isNotEmpty ?? false) {
-      if (criteria['Visit Date From']?.isEmpty ?? false) {
-        conditions.add("Visit_Date <= '${criteria['Visit Date To']}'");
-      }
-    }
-    if ((criteria['Visit Date From']?.isNotEmpty ?? false) &&
-        (criteria['Visit Date To']?.isNotEmpty ?? false)) {
+    // if (criteria['Visit Date From']?.isNotEmpty ?? false) {
+    //   if (criteria['Visit Date To']?.isEmpty ?? false) {
+    //     conditions.add("Visit_Date >= '${criteria['Visit Date From']}'");
+    //   }
+    // }
+    // if (criteria['Visit Date To']?.isNotEmpty ?? false) {
+    //   if (criteria['Visit Date From']?.isEmpty ?? false) {
+    //     conditions.add("Visit_Date <= '${criteria['Visit Date To']}'");
+    //   }
+    // }
+    // if ((criteria['Visit Date From']?.isNotEmpty ?? false) &&
+    //     (criteria['Visit Date To']?.isNotEmpty ?? false)) {
+    //   conditions.add(
+    //       "Visit_Date BETWEEN '${criteria['Visit Date From']}' AND '${criteria['Visit Date To']}'");
+    // }
+
+    String? from = criteria['Visit Date From'];
+    String? to = criteria['Visit Date To'];
+
+    if ((from?.isNotEmpty ?? false) && (to?.isEmpty ?? true)) {
       conditions.add(
-          "Visit_Date BETWEEN '${criteria['Visit Date From']}' AND '${criteria['Visit Date To']}'");
+          "CAST(TRY_CONVERT(DATETIME, Visit_Date, 105) AS DATE) >= '${formatForSql(from!)}'");
+    } else if ((to?.isNotEmpty ?? false) && (from?.isEmpty ?? true)) {
+      conditions.add(
+          "CAST(TRY_CONVERT(DATETIME, Visit_Date, 105) AS DATE) &lt;= '${formatForSql(to!)}'");
+    } else if ((from?.isNotEmpty ?? false) && (to?.isNotEmpty ?? false)) {
+      conditions.add(
+          "CAST(TRY_CONVERT(DATETIME, Visit_Date, 105) AS DATE) BETWEEN '${formatForSql(from!)}' AND '${formatForSql(to!)}'");
     }
 
     // ✅ Handle Birth Date condition
@@ -282,36 +194,6 @@ class _ReportingScreenState extends State<ReportingScreen> {
         .length;
   }
 
-  String buildBaseSelectStatement(List<FieldInfo> fields) {
-    // Filter the fields where isVisible is true
-    final visibleFields = fields.where((field) => field.isVisible).toList();
-
-    // Sort fields by fieldOrder
-    visibleFields.sort((a, b) => a.fieldOrder.compareTo(b.fieldOrder));
-
-    // Build the SELECT clause
-    final selectFields = visibleFields.map((field) {
-      if (field.fieldPreName != null && field.fieldPreName!.isNotEmpty) {
-        // Use fieldPreName and alias with fieldName
-        return '${field.fieldPreName} ${field.fieldName}';
-      } else {
-        // Use fieldName directly
-        return field.fieldName;
-      }
-    }).join(', ');
-
-    // Build the GROUP BY clause
-    final groupByFields = visibleFields
-        .where(
-            (field) => field.fieldGroup != null && field.fieldGroup!.isNotEmpty)
-        .map((field) => field.fieldGroup)
-        .toList();
-    fieldGroupList = groupByFields;
-
-    // Return the SELECT statement with the GROUP BY clause
-    return 'SELECT $selectFields FROM Patients_Visits pv INNER JOIN Patients_Info pi ON pv.Patient_Id = pi.Patient_Id';
-  }
-
   String buildBaseSelectStatement2(List<FieldInfo> fields,
       Map<int, Map> fieldsMap, List<int> selectedFields) {
     // Create a map from the list for easier access by field id
@@ -355,15 +237,13 @@ class _ReportingScreenState extends State<ReportingScreen> {
     fieldGroupList = groupByFields;
 
     // Return the SELECT statement with the GROUP BY clause
-    return 'SELECT $selectFields FROM Patients_Visits pv INNER JOIN Patients_Info pi ON pv.Patient_Id = pi.Patient_Id';
+    return 'SELECT $selectFields FROM Patients_Visits pv LEFT JOIN Patients_Info pi ON pv.Patient_Id = pi.Patient_Id';
   }
 
   Future<void> _loadSetting() async {
     await _settings.init();
     setState(() {
       hidePercentage = _settings.getBool(AppSettingsKeys.hidePercentage);
-
-      dateFormat = _settings.getString(AppSettingsKeys.dateFormat);
     });
   }
 
@@ -392,15 +272,21 @@ class _ReportingScreenState extends State<ReportingScreen> {
                     //     state.searchFields, fieldsMap, selectedFields);
                     fieldsMap = {
                       for (var proc in state.searchFields)
-                        proc.id: {
-                          "desc": proc.fieldDesc,
-                          "visible": proc.isVisible
-                        },
+                        if (proc.fieldName != "Procedure_Status" ||
+                            !hidePercentage)
+                          proc.id: {
+                            "desc": proc.fieldDesc,
+                            "visible": proc.isVisible
+                          },
                     };
                     selectedFields = fieldsMap.entries
                         .where((entry) => entry.value["visible"] == true)
                         .map((entry) => entry.key)
                         .toList();
+                    selectedFields.removeWhere(
+                      (key) => fieldsMap[key]?["desc"] == "Patient Name",
+                    );
+
                     fields = state.searchFields;
                   }
                 },
@@ -423,7 +309,12 @@ class _ReportingScreenState extends State<ReportingScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                readOnly: true,
+                keyboardType: TextInputType.datetime,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(8), // ddMMyyyy
+                  FlexibleDateInputFormatter(),
+                ],
                 controller: birthDateController,
                 decoration: InputDecoration(
                   labelText: "Birth Date",
@@ -431,18 +322,17 @@ class _ReportingScreenState extends State<ReportingScreen> {
                   border: const OutlineInputBorder(),
                 ),
                 onTap: () async {
-                  DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(1900),
-                      lastDate: DateTime(2100),
-                      locale: const Locale('en', 'GB'),
-                      initialEntryMode: DatePickerEntryMode.input);
-                  setState(() {
-                    birthDateController.text =
-                        DateService.format(pickedDate!, dateFormat);
-                    //pickedDate!.toIso8601String().split('T').first;
-                  });
+                  // DateTime? pickedDate = await showDatePicker(
+                  //     context: context,
+                  //     initialDate: DateTime.now(),
+                  //     firstDate: DateTime(1900),
+                  //     lastDate: DateTime(2100),
+                  //     locale: const Locale('en', 'GB'),
+                  //     initialEntryMode: DatePickerEntryMode.input);
+                  // setState(() {
+                  //   birthDateController.text =
+                  //       DateService.format(pickedDate!, dateFormat);
+                  // });
                 },
               ),
               const SizedBox(height: 16),
@@ -450,7 +340,12 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 children: [
                   Expanded(
                     child: TextFormField(
-                      readOnly: true,
+                      keyboardType: TextInputType.datetime,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(8), // ddMMyyyy
+                        FlexibleDateInputFormatter(),
+                      ],
                       controller: visitDateFromController,
                       decoration: InputDecoration(
                         labelText: "Visit Date From",
@@ -458,41 +353,45 @@ class _ReportingScreenState extends State<ReportingScreen> {
                         border: const OutlineInputBorder(),
                       ),
                       onTap: () async {
-                        DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime(2100),
-                            locale: const Locale('en', 'GB'),
-                            initialEntryMode: DatePickerEntryMode.input);
-                        if (pickedDate == null) return;
-                        setState(() {
-                          visitDateFromController.text =
-                              DateService.format(pickedDate, dateFormat);
-                          //pickedDate!.toIso8601String().split('T').first;
-
-                          // Validate date range
-                          if (visitDateToController.text.isNotEmpty) {
-                            DateTime visitDateTo = DateFormat(dateFormat)
-                                .parse(visitDateToController.text);
-                            if (pickedDate.isAfter(visitDateTo)) {
-                              visitDateFromController.clear();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      "Visit Date From cannot be after Visit Date To."),
-                                ),
-                              );
-                            }
-                          }
-                        });
+                        // DateTime? pickedDate = await showDatePicker(
+                        //     context: context,
+                        //     initialDate: DateTime.now(),
+                        //     firstDate: DateTime(1900),
+                        //     lastDate: DateTime(2100),
+                        //     locale: const Locale('en', 'GB'),
+                        //     initialEntryMode: DatePickerEntryMode.input);
+                        // if (pickedDate == null) return;
+                        // setState(() {
+                        //   visitDateFromController.text =
+                        //       DateService.format(pickedDate, dateFormat);
+                        //   //pickedDate!.toIso8601String().split('T').first;
+                        //   // Validate date range
+                        //   if (visitDateToController.text.isNotEmpty) {
+                        //     DateTime visitDateTo = DateFormat(dateFormat)
+                        //         .parse(visitDateToController.text);
+                        //     if (pickedDate.isAfter(visitDateTo)) {
+                        //       visitDateFromController.clear();
+                        //       ScaffoldMessenger.of(context).showSnackBar(
+                        //         const SnackBar(
+                        //           content: Text(
+                        //               "Visit Date From cannot be after Visit Date To."),
+                        //         ),
+                        //       );
+                        //     }
+                        //   }
+                        // });
                       },
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
-                      readOnly: true,
+                      keyboardType: TextInputType.datetime,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(8), // ddMMyyyy
+                        FlexibleDateInputFormatter(),
+                      ],
                       controller: visitDateToController,
                       decoration: InputDecoration(
                         labelText: "Visit Date To",
@@ -500,34 +399,33 @@ class _ReportingScreenState extends State<ReportingScreen> {
                         border: const OutlineInputBorder(),
                       ),
                       onTap: () async {
-                        DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime(2100),
-                            locale: const Locale('en', 'GB'),
-                            initialEntryMode: DatePickerEntryMode.input);
-                        if (pickedDate == null) return;
-                        setState(() {
-                          visitDateToController.text =
-                              DateService.format(pickedDate, dateFormat);
-                          //pickedDate!.toIso8601String().split('T').first;
-
-                          // Validate date range
-                          if (visitDateFromController.text.isNotEmpty) {
-                            DateTime visitDateFrom = DateFormat(dateFormat)
-                                .parse(visitDateFromController.text);
-                            if (visitDateFrom.isAfter(pickedDate)) {
-                              visitDateToController.clear();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      "Visit Date To cannot be before Visit Date From."),
-                                ),
-                              );
-                            }
-                          }
-                        });
+                        // DateTime? pickedDate = await showDatePicker(
+                        //     context: context,
+                        //     initialDate: DateTime.now(),
+                        //     firstDate: DateTime(1900),
+                        //     lastDate: DateTime(2100),
+                        //     locale: const Locale('en', 'GB'),
+                        //     initialEntryMode: DatePickerEntryMode.input);
+                        // if (pickedDate == null) return;
+                        // setState(() {
+                        //   visitDateToController.text =
+                        //       DateService.format(pickedDate, dateFormat);
+                        //   //pickedDate!.toIso8601String().split('T').first;
+                        //   // Validate date range
+                        //   if (visitDateFromController.text.isNotEmpty) {
+                        //     DateTime visitDateFrom = DateFormat(dateFormat)
+                        //         .parse(visitDateFromController.text);
+                        //     if (visitDateFrom.isAfter(pickedDate)) {
+                        //       visitDateToController.clear();
+                        //       ScaffoldMessenger.of(context).showSnackBar(
+                        //         const SnackBar(
+                        //           content: Text(
+                        //               "Visit Date To cannot be before Visit Date From."),
+                        //         ),
+                        //       );
+                        //     }
+                        //   }
+                        // });
                       },
                     ),
                   ),
@@ -676,6 +574,8 @@ class _ReportingScreenState extends State<ReportingScreen> {
                           return;
                         }
                       }
+
+                    
 
                       // Logic to generate the report based on criteria
                       final criteria = {

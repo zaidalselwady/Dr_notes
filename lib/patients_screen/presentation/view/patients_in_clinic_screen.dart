@@ -34,22 +34,12 @@ class PatientsInClinic extends StatelessWidget {
                 Dio(),
               ),
             ),
-          )..fetchPatientsWithSoapRequest("SELECT * FROM Patients_Info Where isOnClinic = 1 AND Status = 0"),
+          )..fetchPatientsWithSoapRequest(
+              "SELECT * FROM Patients_Info Where isOnClinic = 1 AND Status = 0"),
         )
       ],
-      child: Patients(
-        sqlStr: "SELECT * FROM Patients_Info Where isOnClinic = 1 WHERE Status = 0",
-        icon: AllPatientsIcon(
-          onTap: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AllPatientsScreen(),
-              ),
-              (route) => false, // This removes all routes.
-            );
-          },
-        ),
+      child: const Patients(
+        icon: AllPatientsIcon(),
       ),
     );
   }

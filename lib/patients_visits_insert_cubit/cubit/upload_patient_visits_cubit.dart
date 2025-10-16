@@ -36,12 +36,14 @@ class UploadPatientVisitsCubit extends Cubit<UploadPatientVisitsState> {
       final procStatus = element['percentage'] ?? 0;
       final procNotes =
           element['notes'] == null ? "NULL" : "'${element['notes']}'";
-      final visitDate = imageName.split(".").first;
+      // final visitDate = imageName.split(".").first;
+      const visitDate =
+          "CONVERT(VARCHAR(10), DATEADD(HOUR, 3, GETUTCDATE()), 105) + ' ' + CONVERT(VARCHAR(8), DATEADD(HOUR, 3, GETUTCDATE()), 108)";
 
       response = await dataRepo.fetchWithSoapRequest(
         "Insert_Update_cmd",
         "INSERT INTO Patients_Visits (Patient_Id,Procedure_id,Visit_Date,Procedure_Status,Notes) "
-            "VALUES ($patientId , $procId , '$visitDate' , $procStatus , $procNotes)",
+            "VALUES ($patientId , $procId , $visitDate , $procStatus , N$procNotes)",
       );
     }
 

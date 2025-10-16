@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AllPatientsIcon extends StatelessWidget {
-  const AllPatientsIcon({super.key, required this.onTap});
-final Function() onTap;
+  const AllPatientsIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,

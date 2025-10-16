@@ -37,18 +37,9 @@ class AllPatientsScreen extends StatelessWidget {
               "SELECT * FROM Patients_Info WHERE Status = 0"),
         )
       ],
-      child: Patients(
-        sqlStr: "SELECT * FROM Patients_Info",
+      child: const Patients(
         icon: OnlineIcon(
-          onTap: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PatientsInClinic(),
-              ),
-              (route) => false, // This removes all routes.
-            );
-          },
+
         ),
       ),
     );

@@ -10,7 +10,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool hidePercentage = true;
-  bool isDatePickerEnabled = false;
   String savedFormat = ""; // Default format
 
   final _settings = SettingsService();
@@ -60,12 +59,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (val) =>
                 _updateSetting(AppSettingsKeys.hidePercentage, val),
           ),
-          DateFormatSetting(
-            currentFormat: savedFormat,
-            onChanged: (val) async {
-              _updateSetting(AppSettingsKeys.dateFormat, val);
-            },
-          ),
+          // DateFormatSetting(
+          //   currentFormat: savedFormat,
+          //   onChanged: (val) async {
+          //     _updateSetting(AppSettingsKeys.dateFormat, val);
+          //   },
+          // ),
         ],
       ),
     );

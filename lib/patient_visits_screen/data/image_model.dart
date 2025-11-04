@@ -28,8 +28,8 @@ class ImageModel {
       imgName: json['imgName'],
     );
   }
-  bool get isDrawing => strokesJson != null && strokesJson!.isNotEmpty;
-  bool get isImage => imgBase64 != null && imgBase64!.isNotEmpty;
+  bool get isDrawing => imgName.endsWith(".json");
+  bool get isImage => (imgName.endsWith(".png") || imgName.endsWith(".jpg") || imgName.endsWith(".jpeg"));
   // @override
   // String toString() {
   //   return 'QuestionnaireModel(Procedure_id: $procedureId,Procedure_Desc: $procedureDesc)';

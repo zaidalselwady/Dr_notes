@@ -100,8 +100,18 @@ class _FullscreenImageScreenState extends State<FullscreenImageScreen> {
             },
             itemBuilder: (context, index) {
               return Center(
-                child: Image.memory(imagesOnly[index].imgBase64!),
-              );
+                  child: Image.network(
+                "http://138.128.247.219/DrApp/P${widget.patientId}/${imagesOnly[index].imgName}",
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(child: CircularProgressIndicator());
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.broken_image,
+                      size: 40, color: Colors.grey);
+                },
+              ));
             },
           ),
         ));

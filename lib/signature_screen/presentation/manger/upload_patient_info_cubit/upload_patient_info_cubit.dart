@@ -30,3 +30,5 @@ class UploadPatientInfoCubit extends Cubit<UploadPatientInfoState> {
 
 // var response = await dataRepo.fetchWithSoapRequest("Insert_Update_cmd",
 //         "INSERT INTO Patients_Info (name,birthDate,address,phone,email,school,motherName)Values(${childInfo.name},${childInfo.birthDate},${childInfo.address},${childInfo.phone},${childInfo.email},${childInfo.school},${childInfo.motherName})");
+
+

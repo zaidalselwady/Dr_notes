@@ -33,7 +33,7 @@ class _VisitImagesState extends State<VisitImages> {
     super.initState();
     context
         .read<GetFilesCubit>()
-        .getImages3("P${widget.patientInfo.patientId}", null, true);
+        .getImages3("P${widget.patientInfo.patientId}", 2, true);
   }
 
   Color _parseColor(dynamic colorValue) {
@@ -143,7 +143,7 @@ class _VisitImagesState extends State<VisitImages> {
                     return RefreshIndicator(
                       onRefresh: () async {
                         context.read<GetFilesCubit>().getImages3(
-                            "P${widget.patientInfo.patientId}", null, true);
+                            "P${widget.patientInfo.patientId}", 2, true);
                       },
                       child: GridView.builder(
                         padding: const EdgeInsets.all(15),
@@ -188,7 +188,7 @@ class _VisitImagesState extends State<VisitImages> {
                                             .read<GetFilesCubit>()
                                             .getImages3(
                                               "P${widget.patientInfo.patientId}",
-                                              null,
+                                              2,
                                               false,
                                             );
                                       }
@@ -199,7 +199,7 @@ class _VisitImagesState extends State<VisitImages> {
                                   },
                                   child: images[index].isImage
                                       ? Image.memory(
-                                          images[index].imgBase64!,
+                                          images[index].imgBase64??Uint8List(0),
                                           fit: BoxFit.cover,
                                           width: double.infinity,
                                           height: double.infinity,
@@ -213,7 +213,7 @@ class _VisitImagesState extends State<VisitImages> {
                                         )
                                       : FutureBuilder<Uint8List?>(
                                           future: generateThumbnailFromStrokes(
-                                              images[index].strokesJson!),
+                                              ""),
                                           builder: (context, snapshot) {
                                             if (snapshot.connectionState ==
                                                 ConnectionState.waiting) {
@@ -274,7 +274,7 @@ class _VisitImagesState extends State<VisitImages> {
                     return WarningMsgScreen(
                       onRefresh: () async {
                         context.read<GetFilesCubit>().getImages3(
-                            "P${widget.patientInfo.patientId}", null, true);
+                            "P${widget.patientInfo.patientId}", 2, true);
                       },
                       state: state,
                       msg: "No Visits",
@@ -284,7 +284,7 @@ class _VisitImagesState extends State<VisitImages> {
                   return WarningMsgScreen(
                     onRefresh: () async {
                       context.read<GetFilesCubit>().getImages3(
-                          "P${widget.patientInfo.patientId}", null, true);
+                          "P${widget.patientInfo.patientId}", 2, true);
                     },
                     state: state,
                     msg: state.error,
@@ -321,7 +321,7 @@ class _VisitImagesState extends State<VisitImages> {
           if (result == true) {
             context
                 .read<GetFilesCubit>()
-                .getImages3("P${widget.patientInfo.patientId}", null, false);
+                .getImages3("P${widget.patientInfo.patientId}", 2, false);
           }
         },
         child: const Icon(Icons.create),
